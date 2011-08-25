@@ -245,11 +245,11 @@ Section FunctorGroup.
 
 Variables (F : GFunctor.iso_map) (gT : finGroupType) (G : {group gT}).
 Lemma gFgroupset : group_set (F gT G). Proof. by case: F. Qed.
-Canonical Structure gFgroup := Group gFgroupset.
+Canonical gFgroup := Group gFgroupset.
 
 End FunctorGroup.
 
-Canonical Structure gFmod_group
+Canonical gFmod_group
     (F1 : GFunctor.iso_map) (F2 : GFunctor.object_map)
     (gT : finGroupType) (G : {group gT}) :=
   [group of (F1 %% F2)%gF gT G].
@@ -259,54 +259,51 @@ Section IsoFunctorTheory.
 Implicit Types gT rT : finGroupType.
 Variable F : GFunctor.iso_map.
 
-Lemma gFsub : forall gT (G : {group gT}), F gT G \subset G.
-Proof. by case F. Qed.
+Lemma gFsub gT (G : {group gT}) : F gT G \subset G.
+Proof. by case: F gT G. Qed.
 
 Lemma gFiso_cont : GFunctor.iso_continuous F.
 Proof. by case F. Qed.
 
-Lemma gFchar : forall gT (G : {group gT}), F gT G \char G.
+Lemma gFchar gT (G : {group gT}) : F gT G \char G.
 Proof.
-move=> gT G; apply/andP; split => //; first by apply: gFsub.
+apply/andP; split => //; first by apply: gFsub.
 apply/forallP=> f; apply/implyP=> Af; rewrite -{2}(im_autm Af) -(autmE Af).
 by rewrite -morphimEsub ?gFsub ?gFiso_cont ?injm_autm.
 Qed.
 
-Lemma gFnorm : forall gT (G : {group gT}), G \subset 'N(F gT G).
-Proof. by move=> gT G; rewrite char_norm ?gFchar. Qed.
+Lemma gFnorm gT (G : {group gT}) : G \subset 'N(F gT G).
+Proof. by rewrite char_norm ?gFchar. Qed.
 
-Lemma gFnormal : forall gT (G : {group gT}), F gT G <| G.
-Proof. by move=> gT G; rewrite char_normal ?gFchar. Qed.
+Lemma gFnormal gT (G : {group gT}) : F gT G <| G.
+Proof. by rewrite char_normal ?gFchar. Qed.
 
-Lemma injmF_sub : forall gT rT (G D : {group gT}) (f : {morphism D >-> rT}),
+Lemma injmF_sub gT rT (G D : {group gT}) (f : {morphism D >-> rT}) :
   'injm f -> G \subset D -> f @* (F gT G) \subset F rT (f @* G).
 Proof.
-move=> gT rT G D f injf sGD; apply/eqP; rewrite -(setIidPr (gFsub G)).
+move=> injf sGD; apply/eqP; rewrite -(setIidPr (gFsub G)).
 by rewrite-{3}(setIid G) -!(morphim_restrm sGD) gFiso_cont // injm_restrm.
 Qed.
 
-Lemma injmF : forall gT rT (G D : {group gT}) (f : {morphism D >-> rT}),
+Lemma injmF gT rT (G D : {group gT}) (f : {morphism D >-> rT}) :
   'injm f -> G \subset D -> f @* (F gT G) = F rT (f @* G).
 Proof.
-move=> gT rT G D f injf sGD; apply/eqP; rewrite eqEsubset injmF_sub //=.
+move=> injf sGD; apply/eqP; rewrite eqEsubset injmF_sub //=.
 rewrite -{2}(morphim_invm injf sGD) -[f @* F _ _](morphpre_invm injf).
 have Fsubs := subset_trans (gFsub _).
 by rewrite -sub_morphim_pre (injmF_sub, Fsubs) ?morphimS ?injm_invm.
 Qed.
 
-Lemma gFisom :
-  forall gT rT (G D : {group gT}) (R : {group rT}) (f : {morphism D >-> rT}),
-  G \subset D -> isom G R f -> isom (F gT G) (F rT R) f.
+Lemma gFisom gT rT (G D : {group gT}) R (f : {morphism D >-> rT}) :
+  G \subset D -> isom G (gval R) f -> isom (F gT G) (F rT R) f.
 Proof.
-move=> gT rT G D R f; case/(restrmP f)=> g [gf _ _ _]; rewrite -{f}gf.
+case/(restrmP f)=> g [gf _ _ _]; rewrite -{f}gf.
 by case/isomP=> injg <-; rewrite sub_isom ?gFsub ?injmF.
 Qed.
 
-Lemma gFisog : forall gT rT (G : {group gT}) (R : {group rT}),
+Lemma gFisog gT rT (G : {group gT}) (R : {group rT}) :
   G \isog R -> F gT G \isog F rT R.
-Proof.
-by move=> gT rT G R; case/isogP=> f injf <-; rewrite -injmF // sub_isog ?gFsub.
-Qed.
+Proof. by case/isogP=> f injf <-; rewrite -injmF // sub_isog ?gFsub. Qed.
 
 End IsoFunctorTheory.
 
@@ -318,10 +315,10 @@ Variable F : GFunctor.map.
 Lemma gFcont : GFunctor.continuous F.
 Proof. by case F. Qed.
 
-Lemma morphimF : forall gT rT (G D : {group gT}) (f : {morphism D >-> rT}),
+Lemma morphimF gT rT (G D : {group gT}) (f : {morphism D >-> rT}) :
   G \subset D -> f @* (F gT G) \subset F rT (f @* G).
 Proof.
-move=> gT rT G D f sGD; rewrite -(setIidPr (gFsub F G)).
+move=> sGD; rewrite -(setIidPr (gFsub F G)).
 by rewrite -{3}(setIid G) -!(morphim_restrm sGD) gFcont.
 Qed.
 
@@ -338,25 +335,24 @@ Variable F : GFunctor.pmap.
 Lemma gFhereditary : GFunctor.hereditary F.
 Proof. by case F. Qed.
 
-Lemma gFunctorI : forall gT (G H : {group gT}),
+Lemma gFunctorI gT (G H : {group gT}) :
   F gT G :&: H = F gT G :&: F gT (G :&: H).
 Proof.
-move=> gT G H; rewrite -{1}(setIidPr (gFsub F G)) [G :&: _]setIC -setIA.
+rewrite -{1}(setIidPr (gFsub F G)) [G :&: _]setIC -setIA.
 rewrite -(setIidPr (gFhereditary (subsetIl G H))).
 by rewrite setIC -setIA (setIidPr (gFsub F (G :&: H))).
 Qed.
 
 Lemma pmorphimF : GFunctor.pcontinuous F.
 Proof.
-move=> gT rT G D f.
-rewrite -morphimIdom -(setIidPl (gFsub F G)) setICA.
+move=> gT rT G D f; rewrite -morphimIdom -(setIidPl (gFsub F G)) setICA.
 apply: (subset_trans (morphimS f (gFhereditary (subsetIr D G)))).
 by rewrite (subset_trans (morphimF F _ _ )) ?morphimIdom ?subsetIl.
 Qed.
 
-Lemma gFid : forall gT (G : {group gT}), F gT (F gT G)  = F gT G.
+Lemma gFid gT (G : {group gT}) : F gT (F gT G)  = F gT G.
 Proof.
-move=> gT G /=; apply/eqP; rewrite eqEsubset gFsub.
+apply/eqP; rewrite eqEsubset gFsub.
 by move/gFhereditary: (gFsub F G); rewrite setIid /=.
 Qed.
 
@@ -382,18 +378,18 @@ have sFK: 'ker (restrm sDF (coset (F2 _ G))) \subset K.
 have sOF := gFsub F1 (G / F2 _ G); have sGG: G \subset G by [].
 rewrite -sub_quotient_pre; last first.
   by apply: subset_trans (nF2 _ _); rewrite morphimS ?gFmod_closed.
-suffices im_fact: forall H : {group gT}, F2 _ G \subset H -> H \subset G ->
+suffices im_fact H : F2 _ G \subset gval H -> H \subset G ->
   factm sFK sGG @* (H / F2 _ G) = f @* H / F2 _ (f @* G).
 - rewrite -2?im_fact ?gFmod_closed ?gFsub //.
     by rewrite cosetpreK morphimF /= ?morphim_restrm ?setIid.
   by rewrite -sub_quotient_pre ?normG //= trivg_quotient sub1G.
-move=> H sFH sHG; rewrite -(morphimIdom _ (H / _)) /= {2}morphim_restrm setIid.
+move=> sFH sHG; rewrite -(morphimIdom _ (H / _)) /= {2}morphim_restrm setIid.
 rewrite -morphimIG ?ker_coset // -(morphim_restrm sDF) morphim_factm.
 by rewrite morphim_restrm morphim_comp -quotientE morphimIdom.
 Qed.
 
-Canonical Structure gFmod_igFun := [igFun by gFmod_closed & gFmod_cont].
-Canonical Structure gFmod_gFun := [gFun by gFmod_cont].
+Canonical gFmod_igFun := [igFun by gFmod_closed & gFmod_cont].
+Canonical gFmod_gFun := [gFun by gFmod_cont].
 
 End Modulo.
 
@@ -419,7 +415,7 @@ rewrite -(morphim_factm sqKfK sHH) morphimS //= morphim_restrm -quotientE.
 by rewrite setICA setIid (subset_trans (quotientI _ _ _)) // cosetpreK.
 Qed.
 
-Canonical Structure gFmod_pgFun := [pgFun by gFmod_hereditary].
+Canonical gFmod_pgFun := [pgFun by gFmod_hereditary].
 
 End PartialFunctorTheory.
 
@@ -427,8 +423,8 @@ Section MonotonicFunctorTheory.
 
 Implicit Types gT rT : finGroupType.
 
-Lemma gFunctorS : forall F : GFunctor.mono_map, GFunctor.monotonic F.
-Proof. by case. Qed.
+Lemma gFunctorS (F : GFunctor.mono_map) : GFunctor.monotonic F.
+Proof. by case: F. Qed.
 
 Section Composition.
 
@@ -439,13 +435,12 @@ Proof. by move=> gT G; rewrite (subset_trans (gFsub _ _)) ?gFsub. Qed.
 
 Lemma gFcomp_cont : GFunctor.continuous (F1 \o F2).
 Proof.
-move=> gT rT G phi.
-rewrite (subset_trans (morphimF _ _ (gFsub _ _))) //.
+move=> gT rT G phi; rewrite (subset_trans (morphimF _ _ (gFsub _ _))) //.
 by rewrite (subset_trans (gFunctorS F1 (gFcont F2 phi))).
 Qed.
 
-Canonical Structure gFcomp_igFun := [igFun by gFcomp_closed & gFcomp_cont].
-Canonical Structure gFcomp_gFun :=[gFun by gFcomp_cont].
+Canonical gFcomp_igFun := [igFun by gFcomp_closed & gFcomp_cont].
+Canonical gFcomp_gFun :=[gFun by gFcomp_cont].
 
 End Composition.
 
@@ -454,7 +449,7 @@ Variables F1 F2 : GFunctor.mono_map.
 Lemma gFcompS : GFunctor.monotonic (F1 \o F2).
 Proof. by move=> gT H G sHG; rewrite !gFunctorS. Qed.
 
-Canonical Structure gFcomp_mgFun := [mgFun by gFcompS].
+Canonical gFcomp_mgFun := [mgFun by gFcompS].
 
 End MonotonicFunctorTheory.
 
@@ -468,18 +463,18 @@ Lemma idGfun_closed : GFunctor.closed idGfun. Proof. by []. Qed.
 Lemma idGfun_cont : GFunctor.continuous idGfun. Proof. by []. Qed.
 Lemma idGfun_monotonic : GFunctor.monotonic idGfun. Proof. by []. Qed.
 
-Canonical Structure bgFunc_id := [igFun by idGfun_closed & idGfun_cont].
-Canonical Structure gFunc_id := [gFun by idGfun_cont].
-Canonical Structure mgFunc_id := [mgFun by idGfun_monotonic].
+Canonical bgFunc_id := [igFun by idGfun_closed & idGfun_cont].
+Canonical gFunc_id := [gFun by idGfun_cont].
+Canonical mgFunc_id := [mgFun by idGfun_monotonic].
 
 Definition trivGfun gT of {set gT} := [1 gT].
 
 Lemma trivGfun_cont : GFunctor.pcontinuous trivGfun.
 Proof. by move=> gT rT D G f; rewrite morphim1. Qed.
 
-Canonical Structure trivGfun_igFun := [igFun by sub1G & trivGfun_cont].
-Canonical Structure trivGfun_gFun := [gFun by trivGfun_cont].
-Canonical Structure trivGfun_pgFun := [pgFun by trivGfun_cont].
+Canonical trivGfun_igFun := [igFun by sub1G & trivGfun_cont].
+Canonical trivGfun_gFun := [gFun by trivGfun_cont].
+Canonical trivGfun_pgFun := [pgFun by trivGfun_cont].
 
 End GFunctorExamples.
 

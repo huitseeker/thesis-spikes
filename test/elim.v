@@ -176,8 +176,8 @@ move=> p n; rewrite andbCA; case: posnP => [-> // | /= n_gt0].
 apply/mapP/andP=> [[[q e]]|[pr_p]] /=.
   case/mem_prime_decomp=> pr_q e_gt0; case/dvdnP=> u -> -> {p}.
   by rewrite -(prednK e_gt0) expnS mulnCA dvdn_mulr.
-rewrite {1}(prod_prime_decomp n_gt0) big_cond_seq /=.
-elim/big_prop: _ => [| u v IHu IHv | [q e] /= mem_qe dv_p_qe].
+rewrite {1}(prod_prime_decomp n_gt0) big_seq /=.
+elim/big_ind: _ => [| u v IHu IHv | [q e] /= mem_qe dv_p_qe].
 - by rewrite euclid1.
 - by rewrite euclid //; case/orP.
 exists (q, e) => //=; case/mem_prime_decomp: mem_qe => pr_q _ _.
@@ -188,7 +188,7 @@ Lemma sub_in_partn : forall pi1 pi2 n,
   {in \pi(n), {subset pi1 <= pi2}} -> n`_pi1 %| n`_pi2.
 Proof.
 move=> pi1 pi2 n pi12; rewrite ![n`__]big_mkcond /=.
-elim/big_rel: _ => // [*|p _]; first exact: dvdn_mul.
+elim/big_ind2: _ => // [*|p _]; first exact: dvdn_mul.
 rewrite lognE -mem_primes; case: ifP => pi1p; last exact: dvd1n.
 by case: ifP => pr_p; [rewrite pi12 | rewrite if_same].
 Qed.
@@ -217,3 +217,7 @@ match goal with |- forall n : nat, n = 0 -> plus x y = plus x (plus y 0) => idta
  done.
 by move=> _ p _ ->.
 Qed.
+
+(* BUG elim-False *)
+Lemma testeF : False -> 1 = 0.
+Proof. by elim. Qed.

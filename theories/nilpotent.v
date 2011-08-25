@@ -73,45 +73,40 @@ Prenex Implicits nil_class nilpotent solvable.
 Section NilpotentProps.
 
 Variable gT: finGroupType.
-
-Implicit Type A B : {set gT}.
-Implicit Type G H : {group gT}.
+Implicit Types (A B : {set gT}) (G H : {group gT}).
 
 Lemma nilpotent1 : nilpotent [1 gT].
 Proof. apply/forallP=> H; rewrite commG1 setIid -subG1; exact/implyP. Qed.
 
-Lemma nilpotentS : forall A B, B \subset A -> nilpotent A -> nilpotent B.
+Lemma nilpotentS A B : B \subset A -> nilpotent A -> nilpotent B.
 Proof.
-move=> A B sBA nilA; apply/forallP=> H; apply/implyP=> sHR.
+move=> sBA nilA; apply/forallP=> H; apply/implyP=> sHR.
 have:= forallP nilA H; rewrite (subset_trans sHR) //.
 by apply: subset_trans (setIS _ _) (setSI _ _); rewrite ?commgS.
 Qed.
 
-Lemma nil_comm_properl : forall G H A,
+Lemma nil_comm_properl G H A :
     nilpotent G -> H \subset G -> H :!=: 1 -> A \subset 'N_G(H) ->
   [~: H, A] \proper H.
 Proof.
-move=> G H A nilG sHG ntH; rewrite subsetI properE; case/andP=> sAG nHA.
+move=> nilG sHG ntH; rewrite subsetI properE; case/andP=> sAG nHA.
 rewrite (subset_trans (commgS H (subset_gen A))) ?commg_subl ?gen_subG //.
 apply: contra ntH => sHR; have:= forallP nilG H; rewrite subsetI sHG.
 by rewrite (subset_trans sHR) ?commgS.
 Qed.
 
-Lemma nil_comm_properr : forall G A H,
+Lemma nil_comm_properr G A H :
     nilpotent G -> H \subset G -> H :!=: 1 -> A \subset 'N_G(H) ->
   [~: A, H] \proper H.
-Proof. by move=> G A H; rewrite commGC; exact: nil_comm_properl. Qed.
+Proof. by rewrite commGC; exact: nil_comm_properl. Qed.
  
-Lemma centrals_nil : forall (s : seq {group gT})(G : {group gT}),
+Lemma centrals_nil (s : seq {group gT}) G :
   G.-central.-series 1%G s -> last 1%G s = G -> nilpotent G.
 Proof.
-move=> s G cs ls; apply/forall_inP=> H; rewrite subsetI; case/andP=> sHG sHR.
-suff: forall n,  n <= size s -> H \subset nth G (1%G :: s) ((size s) - n).
-  move/(_ (size s)) => /=; rewrite subnn -subG1 leqnn; exact.
-elim=> [|n ihn ltns]; first by rewrite subn0 nth_last last_cons ls.
-apply: subset_trans sHR _; apply: subset_trans (commSg _ (ihn (ltnW ltns))) _.
-have e: (size s - n.+1 < size s) by rewrite -ltn_subS // leq_subr.
-by rewrite ltn_subS //=; case/and3P: {e} (pathP G cs (size s - n.+1) e).
+move=> cGs defG; apply/forall_inP=> H /subsetIP[sHG sHR].
+move: sHG; rewrite -{}defG -subG1 -[1]/(gval 1%G). 
+elim: s 1%G cGs => //= L s IHs K /andP[/and3P[sRK sKL sLG] /IHs sHL] sHs.
+exact: subset_trans sHR (subset_trans (commSg _ (sHL sHs)) sRK).
 Qed.
 
 End NilpotentProps.
@@ -119,70 +114,64 @@ End NilpotentProps.
 Section LowerCentral.
 
 Variable gT : finGroupType.
-Notation sT := {set gT}.
-Implicit Type A B : {set gT}.
-Implicit Type G H : {group gT}.
+Implicit Types (A B : {set gT}) (G H : {group gT}).
 
-Lemma lcn0 : forall A, 'L_0(A) = A. Proof. by []. Qed.
-Lemma lcn1 : forall A, 'L_1(A) = A. Proof. by []. Qed.
-Lemma lcnSn : forall n A, 'L_n.+2(A) = [~: 'L_n.+1(A), A]. Proof. by []. Qed.
-Lemma lcnSnS : forall n G, [~: 'L_n(G), G] \subset 'L_n.+1(G).
-Proof. by case=> [|n] A; rewrite ?der1_subG // lcnSn. Qed.
-Lemma lcnE : forall n A, 'L_n.+1(A) = lower_central_at_rec n A.
+Lemma lcn0 A : 'L_0(A) = A. Proof. by []. Qed.
+Lemma lcn1 A : 'L_1(A) = A. Proof. by []. Qed.
+Lemma lcnSn n A : 'L_n.+2(A) = [~: 'L_n.+1(A), A]. Proof. by []. Qed.
+Lemma lcnSnS n G : [~: 'L_n(G), G] \subset 'L_n.+1(G).
+Proof. by case: n => //; exact: der1_subG. Qed.
+Lemma lcnE n A : 'L_n.+1(A) = lower_central_at_rec n A.
 Proof. by []. Qed.
-Lemma lcn2 : forall A, 'L_2(A) = A^`(1). Proof. by []. Qed.
+Lemma lcn2 A : 'L_2(A) = A^`(1). Proof. by []. Qed.
 
-Lemma lcn_group_set : forall n G, group_set 'L_n(G).
-Proof. move=> n G; case: n; last elim=> *; exact: groupP. Qed.
+Lemma lcn_group_set n G : group_set 'L_n(G).
+Proof. by case: n => [|[|n]]; exact: groupP. Qed.
 
-Canonical Structure lower_central_at_group n G := Group (lcn_group_set n G).
+Canonical lower_central_at_group n G := Group (lcn_group_set n G).
 
-Lemma lcn_char : forall n G, 'L_n(G) \char G.
+Lemma lcn_char n G : 'L_n(G) \char G.
 Proof.
-by case=> [|n] G; last elim: n => [|n IHn]; rewrite ?lcnSn ?charR ?char_refl.
+by case: n => [|n]; last elim: n => [|n IHn]; rewrite ?lcnSn ?charR ?char_refl.
 Qed.
 
-Lemma lcn_normal : forall n G, 'L_n(G) <|  G.
-Proof. move=> n G; apply: char_normal; exact: lcn_char. Qed.
+Lemma lcn_normal n G : 'L_n(G) <|  G.
+Proof. by apply: char_normal; exact: lcn_char. Qed.
 
-Lemma lcn_sub : forall n G, 'L_n(G) \subset G.
-Proof. by move=> n G; case/andP: (lcn_normal n G). Qed.
+Lemma lcn_sub n G : 'L_n(G) \subset G.
+Proof. by case/andP: (lcn_normal n G). Qed.
 
-Lemma lcn_norm : forall n G, G \subset 'N('L_n(G)).
-Proof. by move=> n G; case/andP: (lcn_normal n G). Qed.
+Lemma lcn_norm n G : G \subset 'N('L_n(G)).
+Proof. by case/andP: (lcn_normal n G). Qed.
 
-Lemma lcn_subS : forall n G, 'L_n.+1(G) \subset 'L_n(G).
+Lemma lcn_subS n G : 'L_n.+1(G) \subset 'L_n(G).
 Proof.
-move=> [|n] G //; rewrite lcnSn commGC commg_subr.
+case: n => // n; rewrite lcnSn commGC commg_subr.
 by case/andP: (lcn_normal n.+1 G).
 Qed.
 
-Lemma lcn_normalS : forall n G, 'L_n.+1(G) <| 'L_n(G).
-Proof.
-by move=> G n; apply: normalS (lcn_normal _ _); rewrite (lcn_subS, lcn_sub).
-Qed.
+Lemma lcn_normalS n G : 'L_n.+1(G) <| 'L_n(G).
+Proof. by apply: normalS (lcn_normal _ _); rewrite (lcn_subS, lcn_sub). Qed.
 
-Lemma lcn_central : forall n G,
-  'L_n(G) / 'L_n.+1(G) \subset 'Z(G / 'L_n.+1(G)).
+Lemma lcn_central n G : 'L_n(G) / 'L_n.+1(G) \subset 'Z(G / 'L_n.+1(G)).
 Proof.
-case=> [|n] G; first by rewrite trivg_quotient sub1G.
+case: n => [|n]; first by rewrite trivg_quotient sub1G.
 by rewrite subsetI quotientS ?lcn_sub ?quotient_cents2r.
 Qed.
 
-Lemma lcn_sub_leq : forall m n G, n <= m -> 'L_m(G) \subset 'L_n(G).
+Lemma lcn_sub_leq m n G : n <= m -> 'L_m(G) \subset 'L_n(G).
 Proof.
-move=> m n G; move/subnK <-; elim: {m}(m - n) => // m.
-exact: subset_trans (lcn_subS _ _).
+by move/subnK <-; elim: {m}(m - n) => // m; exact: subset_trans (lcn_subS _ _).
 Qed.
 
-Lemma lcnS : forall n A B, A \subset B -> 'L_n(A) \subset 'L_n(B).
+Lemma lcnS n A B : A \subset B -> 'L_n(A) \subset 'L_n(B).
 Proof.
-by case=> // n A B sAB; elim: n => // n IHn; rewrite !lcnSn genS ?imset2S.
+by case: n => // n sAB; elim: n => // n IHn; rewrite !lcnSn genS ?imset2S.
 Qed.
 
-Lemma lcn_cprod : forall n A B G, A \* B = G -> 'L_n(A) \* 'L_n(B) = 'L_n(G).
+Lemma lcn_cprod n A B G : A \* B = G -> 'L_n(A) \* 'L_n(B) = 'L_n(G).
 Proof.
-move=> [|n] // A B G; case/cprodP=> [[H K -> ->{A B}] defG cHK].
+case: n => // n /cprodP[[H K -> ->{A B}] defG cHK].
 have sL := subset_trans (lcn_sub _ _); rewrite cprodE ?(centSS _ _ cHK) ?sL //.
 symmetry; elim: n => // n; rewrite lcnSn => ->; rewrite commMG /=; last first.
   by apply: subset_trans (commg_normr _ _); rewrite sL // -defG mulG_subr.
@@ -191,17 +180,15 @@ rewrite !commMG ?normsR ?lcn_norm ?cents_norm // 1?centsC //.
 by rewrite -!(commGC 'L__(_)) -!lcnSn !(commG1P _) ?mul1g ?sL // centsC.
 Qed.
 
-Lemma der_cprod : forall n A B G, A \* B = G -> A^`(n) \* B^`(n) = G^`(n).
-Proof.
-by move=> n A B G defG; elim: n => {defG}// n; apply: (lcn_cprod 2).
-Qed.
+Lemma der_cprod n A B G : A \* B = G -> A^`(n) \* B^`(n) = G^`(n).
+Proof. by move=> defG; elim: n => {defG}// n; apply: (lcn_cprod 2). Qed.
 
-Lemma nilpotent_class : forall G, nilpotent G = (nil_class G < #|G|).
+Lemma nilpotent_class G : nilpotent G = (nil_class G < #|G|).
 Proof.
-move=> G; rewrite /nil_class; set s := mkseq _ _.
+rewrite /nil_class; set s := mkseq _ _.
 transitivity (1 \in s); last by rewrite -index_mem size_mkseq.
 apply/idP/mapP=> {s}/= [nilG | [n _ Ln1]]; last first.
-  apply/forallP=> H; rewrite subsetI; apply/implyP; case/andP=> sHG sHR.
+  apply/forall_inP=> H /subsetIP[sHG sHR].
   rewrite -subG1 {}Ln1; elim: n => // n IHn.
   by rewrite (subset_trans sHR) ?commSg.
 pose m := #|G|.-1; exists m; first by rewrite mem_iota /= prednK.
@@ -213,39 +200,38 @@ rewrite -ltnS (leq_trans (proper_card _) IHn) //.
 by rewrite (nil_comm_properl nilG) ?lcn_sub // subsetI subxx lcn_norm.
 Qed.
 
-Lemma lcn_nil_classP : forall n G,
+Lemma lcn_nil_classP n G :
   nilpotent G -> reflect ('L_n.+1(G) = 1) (nil_class G <= n).
 Proof.
-move=> n G; rewrite nilpotent_class /nil_class; set s := mkseq _ _.
+rewrite nilpotent_class /nil_class; set s := mkseq _ _.
 set c := index 1 s => lt_c_G; case: leqP => [le_c_n | lt_n_c].
   have Lc1: nth 1 s c = 1 by rewrite nth_index // -index_mem size_mkseq.
   by left; apply/trivgP; rewrite -Lc1 nth_mkseq ?lcn_sub_leq.
-right; apply/eqP; apply/negPf; rewrite -(before_find 1 lt_n_c) nth_mkseq //.
+right; apply/eqP/negPf; rewrite -(before_find 1 lt_n_c) nth_mkseq //.
 exact: ltn_trans lt_n_c lt_c_G.
 Qed.
 
-Lemma lcnP : forall G, reflect (exists n, 'L_n.+1(G) = 1) (nilpotent G).
+Lemma lcnP G : reflect (exists n, 'L_n.+1(G) = 1) (nilpotent G).
 Proof.
-move=> G; apply: (iffP idP) => [nilG | [n Ln1]].
+apply: (iffP idP) => [nilG | [n Ln1]].
   by exists (nil_class G); exact/lcn_nil_classP.
-apply/forallP=> H; apply/implyP; rewrite subsetI; case/andP=> sHG sHR.
-rewrite -subG1 -{}Ln1; elim: n => // n IHn.
-by rewrite (subset_trans sHR) ?commSg.
+apply/forall_inP=> H /subsetIP[sHG sHR]; rewrite -subG1 -{}Ln1.
+by elim: n => // n IHn; rewrite (subset_trans sHR) ?commSg.
 Qed.
 
-Lemma abelian_nil : forall G, abelian G -> nilpotent G.
-Proof. move=> G abG; apply/lcnP; exists 1%N; exact/commG1P. Qed.
+Lemma abelian_nil G : abelian G -> nilpotent G.
+Proof. by move=> abG; apply/lcnP; exists 1%N; exact/commG1P. Qed.
 
-Lemma nil_class0 : forall G, (nil_class G == 0) = (G :==: 1).
+Lemma nil_class0 G : (nil_class G == 0) = (G :==: 1).
 Proof.
-move=> G; apply/idP/eqP=> [nilG | ->].
+apply/idP/eqP=> [nilG | ->].
   by apply/(lcn_nil_classP 0); rewrite ?nilpotent_class (eqP nilG) ?cardG_gt0.
 by rewrite -leqn0; apply/(lcn_nil_classP 0); rewrite ?nilpotent1.
 Qed.
 
-Lemma nil_class1 : forall G, (nil_class G <= 1) = abelian G.
+Lemma nil_class1 G : (nil_class G <= 1) = abelian G.
 Proof.
-move=> G; case: (eqsVneq G 1) => [-> | ntG].
+have [-> | ntG] := eqsVneq G 1.
   by rewrite abelian1 leq_eqVlt ltnS leqn0 nil_class0 eqxx orbT.
 apply/idP/idP=> cGG.
   apply/commG1P; apply/(lcn_nil_classP 1); rewrite // nilpotent_class.
@@ -253,52 +239,47 @@ apply/idP/idP=> cGG.
 by apply/(lcn_nil_classP 1); rewrite ?abelian_nil //; apply/commG1P.
 Qed.
 
-Lemma cprod_nil : forall A B G,
-  A \* B = G -> nilpotent (G) = nilpotent A && nilpotent B.
+Lemma cprod_nil A B G : A \* B = G -> nilpotent G = nilpotent A && nilpotent B.
 Proof.
-move=> A B G defG; case/cprodP: defG (defG) => [[H K -> ->{A B}] defG _] defGc.
-apply/idP/andP=> [nilG | []].
+move=> defG; case/cprodP: defG (defG) => [[H K -> ->{A B}] defG _] defGc.
+apply/idP/andP=> [nilG | [/lcnP[m LmH1] /lcnP[n LnK1]]].
   by rewrite !(nilpotentS _ nilG) // -defG (mulG_subr, mulG_subl).
-case/lcnP=> m LmH1; case/lcnP=> n LnK1; apply/lcnP; exists (m + n.+1).
-apply/trivgP; case/cprodP: (lcn_cprod (m.+1 + n.+1) defGc) => _ <- _.
+apply/lcnP; exists (m + n.+1); apply/trivgP.
+case/cprodP: (lcn_cprod (m.+1 + n.+1) defGc) => _ <- _.
 by rewrite mulG_subG /= -{1}LmH1 -LnK1 !lcn_sub_leq ?leq_addl ?leq_addr.
 Qed.
 
-Lemma mulg_nil : forall G H,
+Lemma mulg_nil G H :
   H \subset 'C(G) -> nilpotent (G * H) = nilpotent G && nilpotent H.
-Proof.
-by move=> G H cGH; rewrite -(cprod_nil (cprodEY cGH)) /= cent_joinEr.
+Proof. by move=> cGH; rewrite -(cprod_nil (cprodEY cGH)) /= cent_joinEr. Qed.
+
+Lemma dprod_nil A B G : A \x B = G -> nilpotent G = nilpotent A && nilpotent B.
+Proof. by case/dprodP=> [[H K -> ->] <- cHK _]; rewrite mulg_nil.
 Qed.
 
-Lemma dprod_nil : forall A B G,
-   A \x B = G -> nilpotent G = nilpotent A && nilpotent B.
-Proof.
-by move=> A B G; case/dprodP=> [[H K -> ->] <- cHK _]; rewrite mulg_nil.
-Qed.
-
-Lemma bigdprod_nil : forall I r (P : pred I) (A_ : I -> {set gT}) G,
+Lemma bigdprod_nil I r (P : pred I) (A_ : I -> {set gT}) G :
   \big[dprod/1]_(i <- r | P i) A_ i = G
   -> (forall i, P i -> nilpotent (A_ i)) -> nilpotent G.
 Proof.
-move=> I r P A_ G defG nilA; rewrite -defG; move: G defG.
-apply big_prop => [| A B IHA IHB G defG | i Pi]; rewrite ?nilpotent1 ?nilA //.
-rewrite defG (dprod_nil defG).
-by case/dprodP: defG => [[H K]]; move/IHA->; move/IHB.
+move=> defG nilA; elim/big_rec: _ => [|i B Pi nilB] in G defG *.
+  by rewrite -defG nilpotent1.
+have [[_ H _ defB] _ _ _] := dprodP defG.
+by rewrite (dprod_nil defG) nilA //= defB nilB.
 Qed.
 
 End LowerCentral.
 
 Notation "''L_' n ( G )" := (lower_central_at_group n G) : subgroup_scope.
 
-Lemma lcn_cont : forall n, GFunctor.continuous (lower_central_at n).
+Lemma lcn_cont n : GFunctor.continuous (lower_central_at n).
 Proof.
-case=> //; elim=> // n IHn g0T h0T H phi.
+case: n => //; elim=> // n IHn g0T h0T H phi.
 by rewrite !lcnSn morphimR ?lcn_sub // commSg ?IHn.
 Qed.
 
-Canonical Structure lcn_igFun n := [igFun by lcn_sub^~ n & lcn_cont n].
-Canonical Structure lcn_gFun n := [gFun by lcn_cont n].
-Canonical Structure lcn_mgFun n := [mgFun by fun _ G H => @lcnS _ n G H].
+Canonical lcn_igFun n := [igFun by lcn_sub^~ n & lcn_cont n].
+Canonical lcn_gFun n := [gFun by lcn_cont n].
+Canonical lcn_mgFun n := [mgFun by fun _ G H => @lcnS _ n G H].
 
 Section UpperCentralFunctor.
 
@@ -313,20 +294,20 @@ Qed.
 
 (* Now extract all the intermediate facts of the last proof. *)
 
-Lemma ucn_group_set : forall gT (G : {group gT}), group_set 'Z_n(G).
-Proof. by case: ucn_pmap => hZ -> gT G; exact: groupP. Qed.
+Lemma ucn_group_set gT (G : {group gT}) : group_set 'Z_n(G).
+Proof. by have [hZ ->] := ucn_pmap; exact: groupP. Qed.
 
-Canonical Structure upper_central_at_group gT G := Group (@ucn_group_set gT G).
+Canonical upper_central_at_group gT G := Group (@ucn_group_set gT G).
 
-Lemma ucn_sub : forall gT (G : {group gT}), 'Z_n(G) \subset G.
-Proof. by case: ucn_pmap => hZ ->; exact: gFsub. Qed.
+Lemma ucn_sub gT (G : {group gT}) : 'Z_n(G) \subset G.
+Proof. by have [hZ ->] := ucn_pmap; exact: gFsub. Qed.
 
 Lemma morphim_ucn : GFunctor.pcontinuous (upper_central_at n).
-Proof. by case: ucn_pmap => hZ ->; exact: pmorphimF. Qed.
+Proof. by have [hZ ->] := ucn_pmap; exact: pmorphimF. Qed.
 
-Canonical Structure ucn_igFun := [igFun by ucn_sub & morphim_ucn].
-Canonical Structure ucn_gFun := [gFun by morphim_ucn].
-Canonical Structure ucn_pgFun := [pgFun by morphim_ucn].
+Canonical ucn_igFun := [igFun by ucn_sub & morphim_ucn].
+Canonical ucn_gFun := [gFun by morphim_ucn].
+Canonical ucn_pgFun := [pgFun by morphim_ucn].
 
 Variable (gT : finGroupType) (G : {group gT}).
 
@@ -341,88 +322,83 @@ Notation "''Z_' n ( G )" := (upper_central_at_group n G) : subgroup_scope.
 Section UpperCentral.
 
 Variable gT : finGroupType.
-Notation sT := {set gT}.
-Implicit Type A B : {set gT}.
-Implicit Type G H : {group gT}.
+Implicit Types (A B : {set gT}) (G H : {group gT}).
 
-Lemma ucn0 : forall A, 'Z_0(A) = 1.
+Lemma ucn0 A : 'Z_0(A) = 1.
 Proof. by []. Qed.
 
-Lemma ucnSn : forall n A, 'Z_n.+1(A) = coset 'Z_n(A) @*^-1 'Z(A / 'Z_n(A)).
+Lemma ucnSn n A : 'Z_n.+1(A) = coset 'Z_n(A) @*^-1 'Z(A / 'Z_n(A)).
 Proof. by []. Qed.
 
-Lemma ucnE : forall n A, 'Z_n(A) = upper_central_at_rec n A.
+Lemma ucnE n A : 'Z_n(A) = upper_central_at_rec n A.
 Proof. by []. Qed.
 
-Lemma ucn_subS : forall n G, 'Z_n(G) \subset 'Z_n.+1(G).
-Proof. by move=> n G; rewrite -{1}['Z_n(G)]ker_coset morphpreS ?sub1G. Qed.
+Lemma ucn_subS n G : 'Z_n(G) \subset 'Z_n.+1(G).
+Proof. by rewrite -{1}['Z_n(G)]ker_coset morphpreS ?sub1G. Qed.
 
-Lemma ucn_sub_geq : forall m n G, n >= m -> 'Z_m(G) \subset 'Z_n(G).
+Lemma ucn_sub_geq m n G : n >= m -> 'Z_m(G) \subset 'Z_n(G).
 Proof.
-move=> m n G; move/subnK <-; elim: {n}(n - m) => // n IHn.
+move/subnK <-; elim: {n}(n - m) => // n IHn.
 exact: subset_trans (ucn_subS _ _).
 Qed.
 
-Lemma ucn_central : forall n G, 'Z_n.+1(G) / 'Z_n(G) = 'Z(G / 'Z_n(G)).
-Proof. by move=> n G; rewrite ucnSn cosetpreK. Qed.
+Lemma ucn_central n G : 'Z_n.+1(G) / 'Z_n(G) = 'Z(G / 'Z_n(G)).
+Proof. by rewrite ucnSn cosetpreK. Qed.
 
-Lemma ucn_normalS : forall n G, 'Z_n(G) <| 'Z_n.+1(G).
-Proof.
-by move=> n G; rewrite (normalS _ _ (ucn_normal n G)) ?ucn_subS ?ucn_sub.
-Qed.
+Lemma ucn_normalS n G : 'Z_n(G) <| 'Z_n.+1(G).
+Proof. by rewrite (normalS _ _ (ucn_normal n G)) ?ucn_subS ?ucn_sub. Qed.
 
-Lemma ucn_comm : forall n G, [~: 'Z_n.+1(G), G] \subset 'Z_n(G).
+Lemma ucn_comm n G : [~: 'Z_n.+1(G), G] \subset 'Z_n(G).
 Proof.
-move=> G n; rewrite -quotient_cents2 ?normal_norm ?ucn_normal ?ucn_normalS //.
+rewrite -quotient_cents2 ?normal_norm ?ucn_normal ?ucn_normalS //.
 by rewrite ucn_central subsetIr.
 Qed.
 
-Lemma ucn1 : forall G, 'Z_1(G) = 'Z(G).
+Lemma ucn1 G : 'Z_1(G) = 'Z(G).
 Proof.
-move=> G; apply: (quotient_inj (normal1 _) (normal1 _)).
+apply: (quotient_inj (normal1 _) (normal1 _)).
 by rewrite /= (ucn_central 0) -injmF ?norms1 ?coset1_injm.
 Qed.
 
-Lemma ucnSnR : forall n G,
+Lemma ucnSnR n G :
   'Z_n.+1(G) = [set x \in G | [~: [set x], G] \subset 'Z_n(G)].
 Proof.
-move=> n G; apply/setP=> x; rewrite inE -(setIidPr (ucn_sub n.+1 G)) inE ucnSn.
+apply/setP=> x; rewrite inE -(setIidPr (ucn_sub n.+1 G)) inE ucnSn.
 case Gx: (x \in G) => //=; have nZG := ucn_norm n G.
 rewrite -sub1set -sub_quotient_pre -?quotient_cents2 ?sub1set ?(subsetP nZG) //.
 by rewrite subsetI quotientS ?sub1set.
 Qed.
 
-Lemma ucn_lcnP : forall n G, ('L_n.+1(G) == 1) = ('Z_n(G) == G).
+Lemma ucn_lcnP n G : ('L_n.+1(G) == 1) = ('Z_n(G) == G).
 Proof.
-move=> n G; rewrite !eqEsubset sub1G ucn_sub /= andbT -(ucn0 G).
+rewrite !eqEsubset sub1G ucn_sub /= andbT -(ucn0 G).
 elim: {1 3}n 0 (addn0 n) => [j <- //|i IHi j].
-rewrite addSnnS; move/IHi=> <- {IHi}; rewrite ucnSn lcnSn.
+rewrite addSnnS => /IHi <- {IHi}; rewrite ucnSn lcnSn.
 have nZG := normal_norm (ucn_normal j G).
 have nZL := subset_trans (lcn_sub _ _) nZG.
 by rewrite -sub_morphim_pre // subsetI morphimS ?lcn_sub // quotient_cents2.
 Qed.
 
-Lemma ucnP : forall G, reflect (exists n, 'Z_n(G) = G) (nilpotent G).
+Lemma ucnP G : reflect (exists n, 'Z_n(G) = G) (nilpotent G).
 Proof.
-move=> G; apply: (iffP (lcnP G)) => [] [n]; move/eqP=> clGn;
+apply: (iffP (lcnP G)) => [] [n /eqP clGn];
   by exists n; apply/eqP; rewrite ucn_lcnP in clGn *.
 Qed.
 
-Lemma ucn_nil_classP : forall n G,
+Lemma ucn_nil_classP n G :
   nilpotent G -> reflect ('Z_n(G) = G) (nil_class G <= n).
 Proof.
-move=> n G nilG; rewrite (sameP (lcn_nil_classP n nilG) eqP) ucn_lcnP.
-exact: eqP.
+move=> nilG; rewrite (sameP (lcn_nil_classP n nilG) eqP) ucn_lcnP; exact: eqP.
 Qed.
 
-Lemma ucn_id : forall n G, 'Z_n('Z_n(G)) = 'Z_n(G).
-Proof. by move=> n G; rewrite -{2}['Z_n(G)]gFid. Qed.
+Lemma ucn_id n G : 'Z_n('Z_n(G)) = 'Z_n(G).
+Proof. by rewrite -{2}['Z_n(G)]gFid. Qed.
 
-Lemma ucn_nilpotent : forall n G, nilpotent 'Z_n(G). 
-Proof. by move=> n G; apply/ucnP; exists n; rewrite ucn_id. Qed.
+Lemma ucn_nilpotent n G : nilpotent 'Z_n(G). 
+Proof. by apply/ucnP; exists n; rewrite ucn_id. Qed.
 
-Lemma nil_class_ucn : forall n G, nil_class 'Z_n(G) <= n.
-Proof. by move=> n G; apply/ucn_nil_classP; rewrite ?ucn_nilpotent ?ucn_id. Qed.
+Lemma nil_class_ucn n G : nil_class 'Z_n(G) <= n.
+Proof. by apply/ucn_nil_classP; rewrite ?ucn_nilpotent ?ucn_id. Qed.
 
 End UpperCentral.
 
@@ -431,41 +407,38 @@ Section MorphNil.
 Variables (aT rT : finGroupType) (D : {group aT}) (f : {morphism D >-> rT}).
 Implicit Type G : {group aT}.
 
-Lemma morphim_lcn : forall n G, G \subset D -> f @* 'L_n(G) = 'L_n(f @* G).
+Lemma morphim_lcn n G : G \subset D -> f @* 'L_n(G) = 'L_n(f @* G).
 Proof.
-case=> // n G sHG; elim: n => // n IHn.
+move=> sHG; case: n => //; elim=> // n IHn.
 by rewrite !lcnSn -IHn morphimR // (subset_trans _ sHG) // lcn_sub.
 Qed.
 
-Lemma injm_ucn : forall n G,
-  'injm f -> G \subset D -> f @* 'Z_n(G) = 'Z_n(f @* G).
-Proof. move=> n G; exact: injmF. Qed.
+Lemma injm_ucn n G : 'injm f -> G \subset D -> f @* 'Z_n(G) = 'Z_n(f @* G).
+Proof. exact: injmF. Qed.
 
-Lemma morphim_nil : forall G, nilpotent G -> nilpotent (f @* G).
+Lemma morphim_nil G : nilpotent G -> nilpotent (f @* G).
 Proof.
-move=> G; case/ucnP=> n ZnG; apply/ucnP; exists n.
-by apply/eqP; rewrite eqEsubset ucn_sub /= -{1}ZnG morphim_ucn.
+case/ucnP=> n ZnG; apply/ucnP; exists n; apply/eqP.
+by rewrite eqEsubset ucn_sub /= -{1}ZnG morphim_ucn.
 Qed.
 
-Lemma injm_nil : forall G,
-  'injm f -> G \subset D -> nilpotent (f @* G) = nilpotent G.
+Lemma injm_nil G : 'injm f -> G \subset D -> nilpotent (f @* G) = nilpotent G.
 Proof.
-move=> G injf sGD; apply/idP/idP; last exact: morphim_nil.
-case/ucnP=> n; rewrite -injm_ucn //; move/injm_morphim_inj=> // defZ.
+move=> injf sGD; apply/idP/idP; last exact: morphim_nil.
+case/ucnP=> n; rewrite -injm_ucn // => /injm_morphim_inj defZ.
 by apply/ucnP; exists n; rewrite defZ ?(subset_trans (ucn_sub n G)).
 Qed.
 
-Lemma nil_class_morphim : forall G,
-  nilpotent G -> nil_class (f @* G) <= nil_class G.
+Lemma nil_class_morphim G : nilpotent G -> nil_class (f @* G) <= nil_class G.
 Proof.
-move=> G nilG; rewrite (sameP (ucn_nil_classP _ (morphim_nil nilG)) eqP) /=.
+move=> nilG; rewrite (sameP (ucn_nil_classP _ (morphim_nil nilG)) eqP) /=.
 by rewrite eqEsubset ucn_sub -{1}(ucn_nil_classP _ nilG (leqnn _)) morphim_ucn.
 Qed.
 
-Lemma nil_class_injm : forall G,
+Lemma nil_class_injm G :
   'injm f -> G \subset D -> nil_class (f @* G) = nil_class G.
 Proof.
-move=> G injf sGD; case nilG: (nilpotent G).
+move=> injf sGD; case nilG: (nilpotent G).
   apply/eqP; rewrite eqn_leq nil_class_morphim //.
   rewrite (sameP (lcn_nil_classP _ nilG) eqP) -subG1.
   rewrite -(injmSK injf) ?(subset_trans (lcn_sub _ _)) // morphim1.
@@ -482,12 +455,11 @@ End MorphNil.
 Section QuotientNil.
 
 Variables gT : finGroupType.
-Implicit Types G H : {group gT}.
+Implicit Types (rT : finGroupType) (G H : {group gT}).
 
-Lemma quotient_ucn_add : forall m n G,
-  'Z_(m + n)(G) / 'Z_n(G) = 'Z_m(G / 'Z_n(G)).
+Lemma quotient_ucn_add m n G : 'Z_(m + n)(G) / 'Z_n(G) = 'Z_m(G / 'Z_n(G)).
 Proof.
-move=> m n G; elim: m => [|m IHm]; first exact: trivg_quotient.
+elim: m => [|m IHm]; first exact: trivg_quotient.
 apply/setP=> Zx; have [x Nx ->{Zx}] := cosetP Zx.
 have [sZG nZG] := andP (ucn_normal n G).
 rewrite (ucnSnR m) inE -!sub1set -morphim_set1 //= -quotientR ?sub1set // -IHm.
@@ -495,29 +467,28 @@ rewrite !quotientSGK ?(ucn_sub_geq, leq_addl, comm_subG _ nZG, sub1set) //=.
 by rewrite addSn /= ucnSnR inE.
 Qed.
 
-Lemma isog_nil : forall (rT : finGroupType) G (L : {group rT}),
-  G \isog L -> nilpotent G = nilpotent L.
-Proof. by move=> rT G L; case/isogP=> f injf <-; rewrite injm_nil. Qed.
+Lemma isog_nil rT G (L : {group rT}) : G \isog L -> nilpotent G = nilpotent L.
+Proof. by case/isogP=> f injf <-; rewrite injm_nil. Qed.
 
-Lemma isog_nil_class : forall (rT : finGroupType) G (L : {group rT}),
+Lemma isog_nil_class rT G (L : {group rT}) :
   G \isog L -> nil_class G = nil_class L.
-Proof. by move=> rT G L; case/isogP=> f injf <-; rewrite nil_class_injm. Qed.
+Proof. by case/isogP=> f injf <-; rewrite nil_class_injm. Qed.
 
-Lemma quotient_nil : forall G H, nilpotent G -> nilpotent (G / H).
-Proof. move=> G H; exact: morphim_nil. Qed.
+Lemma quotient_nil G H : nilpotent G -> nilpotent (G / H).
+Proof. exact: morphim_nil. Qed.
   
-Lemma quotient_center_nil : forall G, nilpotent (G / 'Z(G)) = nilpotent G.
+Lemma quotient_center_nil G : nilpotent (G / 'Z(G)) = nilpotent G.
 Proof.
-move=> G; rewrite -ucn1; apply/idP/idP; last exact: quotient_nil.
+rewrite -ucn1; apply/idP/idP; last exact: quotient_nil.
 case/ucnP=> c nilGq; apply/ucnP; exists c.+1; have nsZ1G := ucn_normal 1 G.
 apply: (quotient_inj _ nsZ1G); last by rewrite /= -(addn1 c) quotient_ucn_add.
 by rewrite (normalS _ _ nsZ1G) ?ucn_sub ?ucn_sub_geq.
 Qed.
 
-Lemma nil_class_quotient_center : forall G,
+Lemma nil_class_quotient_center G :
   nilpotent (G) -> nil_class (G / 'Z(G)) = (nil_class G).-1.
 Proof.
-move=> G nilG; have nsZ1G := ucn_normal 1 G.
+move=> nilG; have nsZ1G := ucn_normal 1 G.
 apply/eqP; rewrite -ucn1 eqn_leq; apply/andP; split.
   apply/ucn_nil_classP; rewrite ?quotient_nil //= -quotient_ucn_add ucn1.
   by rewrite (ucn_nil_classP _ _ _) ?addn1 ?leqSpred.
@@ -527,30 +498,28 @@ apply: (quotient_inj _ nsZ1G) => /=.
 by rewrite quotient_ucn_add; apply/ucn_nil_classP; rewrite //= quotient_nil.
 Qed.
 
-Lemma nilpotent_sub_norm : forall G H,
+Lemma nilpotent_sub_norm G H :
   nilpotent G -> H \subset G -> 'N_G(H) \subset H -> G :=: H.
 Proof.
-move=> G H nilG sHG sNH; apply/eqP; rewrite eqEsubset sHG andbT.
-apply/negP=> nsGH.
+move=> nilG sHG sNH; apply/eqP; rewrite eqEsubset sHG andbT; apply/negP=> nsGH.
 have{nsGH} [i sZH []]: exists2 i, 'Z_i(G) \subset H & ~ 'Z_i.+1(G) \subset H.
   case/ucnP: nilG => n ZnG; rewrite -{}ZnG in nsGH.
   elim: n => [|i IHi] in nsGH *; first by rewrite sub1G in nsGH.
   by case sZH: ('Z_i(G) \subset H); [exists i | apply: IHi; rewrite sZH].
 apply: subset_trans sNH; rewrite subsetI ucn_sub -commg_subr.
-apply: subset_trans sZH; apply: subset_trans (ucn_comm i G); exact: commgS.
+by apply: subset_trans sZH; apply: subset_trans (ucn_comm i G); exact: commgS.
 Qed.
 
-Lemma nilpotent_proper_norm : forall G H,
+Lemma nilpotent_proper_norm G H :
   nilpotent G -> H \proper G -> H \proper 'N_G(H).
 Proof.
-move=> G H nilG; rewrite properEneq properE subsetI normG; case/andP=> neHG sHG.
+move=> nilG; rewrite properEneq properE subsetI normG => /andP[neHG sHG].
 by rewrite sHG; apply: contra neHG; move/(nilpotent_sub_norm nilG)->.
 Qed.
 
-Lemma nilpotent_subnormal : forall G H,
-  nilpotent G -> H \subset G -> H <|<| G.
+Lemma nilpotent_subnormal G H : nilpotent G -> H \subset G -> H <|<| G.
 Proof.
-move=> G H nilG; elim: {H}_.+1 {-2}H (ltnSn (#|G| - #|H|)) => // m IHm H.
+move=> nilG; elim: {H}_.+1 {-2}H (ltnSn (#|G| - #|H|)) => // m IHm H.
 rewrite ltnS => leGHm sHG; have:= sHG; rewrite subEproper.
 case/predU1P=> [->|]; first exact: subnormal_refl.
 move/(nilpotent_proper_norm nilG); set K := 'N_G(H) => prHK.
@@ -560,25 +529,24 @@ apply: subnormal_trans snHK (IHm _ (leq_trans _ leGHm) sKG).
 by rewrite ltn_sub2l ?proper_card ?(proper_sub_trans prHK).
 Qed.
 
-Lemma TI_center_nil : forall G H,
-  nilpotent G -> H <| G -> H :&: 'Z(G) = 1 -> H :=: 1.
+Lemma TI_center_nil G H : nilpotent G -> H <| G -> H :&: 'Z(G) = 1 -> H :=: 1.
 Proof.
-move=> G H nilG; case/andP=> sHG nHG trHZ.
-rewrite -{1}(setIidPl sHG); case/ucnP: nilG => n <-.
-elim: n => [|n IHn]; apply/trivgP; rewrite ?subsetIr // -trHZ.
+move=> nilG /andP[sHG nHG] tiHZ.
+rewrite -{1}(setIidPl sHG); have{nilG} /ucnP[n <-] := nilG.
+elim: n => [|n IHn]; apply/trivgP; rewrite ?subsetIr // -tiHZ.
 rewrite [H :&: 'Z(G)]setIA subsetI setIS ?ucn_sub //= (sameP commG1P trivgP).
 rewrite -commg_subr commGC in nHG.
 rewrite -IHn subsetI (subset_trans _ nHG) ?commSg ?subsetIl //=.
 by rewrite (subset_trans _ (ucn_comm n G)) ?commSg ?subsetIr.
 Qed.
 
-Lemma meet_center_nil : forall G H,
+Lemma meet_center_nil G H :
   nilpotent G -> H <| G -> H :!=: 1 -> H :&: 'Z(G) != 1.
-Proof. by move=> G H nilG nsHG; apply: contraNneq; move/TI_center_nil->. Qed.
+Proof. by move=> nilG nsHG; apply: contraNneq => /TI_center_nil->. Qed.
 
-Lemma center_nil_eq1 : forall G, nilpotent G -> ('Z(G) == 1) = (G :==: 1).
+Lemma center_nil_eq1 G : nilpotent G -> ('Z(G) == 1) = (G :==: 1).
 Proof.
-move=> G nilG; apply/eqP/eqP=> [Z1 | ->]; last exact: center1.
+move=> nilG; apply/eqP/eqP=> [Z1 | ->]; last exact: center1.
 by rewrite (TI_center_nil nilG) // (setIidPr (center_sub G)).
 Qed.
 
@@ -589,42 +557,42 @@ Section Solvable.
 Variable gT : finGroupType.
 Implicit Types G H : {group gT}.
 
-Lemma nilpotent_sol : forall G, nilpotent G -> solvable G.
+Lemma nilpotent_sol G : nilpotent G -> solvable G.
 Proof.
-move=> G nilG; apply/forallP=> H; rewrite subsetI.
-apply/implyP; case/andP=> sHG sHH'; apply: (implyP (forallP nilG H)).
+move=> nilG; apply/forall_inP=> H /subsetIP[sHG sHH'].
+apply: (implyP (forallP nilG H)).
 by rewrite subsetI sHG (subset_trans sHH') ?commgS.
 Qed.
 
-Lemma abelian_sol : forall G, abelian G -> solvable G.
-Proof. move=> G; move/abelian_nil; exact: nilpotent_sol. Qed.
+Lemma abelian_sol G : abelian G -> solvable G.
+Proof. by move/abelian_nil; exact: nilpotent_sol. Qed.
 
 Lemma solvable1 : solvable [1 gT]. Proof. exact: abelian_sol (abelian1 gT). Qed.
 
-Lemma solvableS : forall G H, H \subset G -> solvable G -> solvable H.
+Lemma solvableS G H : H \subset G -> solvable G -> solvable H.
 Proof.
-move=> G H sHG solG; apply/forallP=> K; rewrite subsetI.
-apply/implyP; case/andP=> sKH sKK'; apply: (implyP (forallP solG K)).
-by rewrite subsetI (subset_trans sKH).
+move=> sHG solG;  apply/forall_inP=> K /subsetIP[sKH sKK'].
+by apply: (implyP (forallP solG K)); rewrite subsetI (subset_trans sKH).
 Qed.
 
-Lemma sol_der1_proper : forall G H,
+Lemma sol_der1_proper G H :
   solvable G -> H \subset G -> H :!=: 1 -> H^`(1) \proper H.
 Proof.
-move=> G H solG sHG ntH; rewrite properE comm_subG //; apply: implyP ntH.
+move=> solG sHG ntH; rewrite properE comm_subG //; apply: implyP ntH.
 by have:= forallP solG H; rewrite subsetI sHG implybNN. 
 Qed.
 
-Lemma derivedP : forall G, reflect (exists n, G^`(n) = 1) (solvable G).
+Lemma derivedP G : reflect (exists n, G^`(n) = 1) (solvable G).
 Proof.
-move=> G; apply: (iffP idP) => [solG | [n solGn]]; last first.
-  apply/forallP=> H; rewrite subsetI; apply/implyP; case/andP=> sHG sH'H.
+apply: (iffP idP) => [solG | [n solGn]]; last first.
+  apply/forall_inP=> H /subsetIP[sHG sHH'].
   rewrite -subG1 -{}solGn; elim: n => // n IHn.
-  exact: subset_trans sH'H (commgSS _ _).
-suffices IHn: forall n, #|G^`(n)| <= (#|G|.-1 - n).+1.
+  exact: subset_trans sHH' (commgSS _ _).
+suffices IHn n: #|G^`(n)| <= (#|G|.-1 - n).+1.
   by exists #|G|.-1; rewrite [G^`(_)]card_le1_trivg ?(leq_trans (IHn _)) ?subnn.
-elim=> [|n IHn]; [by rewrite subn0 prednK | rewrite dergSn -predn_sub -ltnS].
-case: (eqVneq G^`(n) 1) => [-> | ntGn]; first by rewrite commG1 cards1.
+elim: n => [|n IHn]; first by rewrite subn0 prednK.
+rewrite dergSn -predn_sub -ltnS.
+have [-> | ntGn] := eqVneq G^`(n) 1; first by rewrite commG1 cards1.
 case: (_ - _) IHn => [|n']; first by rewrite leqNgt cardG_gt1 ntGn.
 by apply: leq_trans (proper_card _); exact: sol_der1_proper (der_sub _ _) _.
 Qed.
@@ -657,19 +625,17 @@ Section QuotientSol.
 Variables gT rT : finGroupType.
 Implicit Types G H K : {group gT}.
 
-Lemma isog_sol : forall G (L : {group rT}),
-  G \isog L -> solvable G = solvable L.
-Proof. by move=> G L; case/isogP=> f injf <-; rewrite injm_sol. Qed.
+Lemma isog_sol G (L : {group rT}) : G \isog L -> solvable G = solvable L.
+Proof. by case/isogP=> f injf <-; rewrite injm_sol. Qed.
 
-Lemma quotient_sol : forall G H, solvable G -> solvable (G / H).
-Proof. move=> G H; exact: morphim_sol. Qed.
+Lemma quotient_sol G H : solvable G -> solvable (G / H).
+Proof. exact: morphim_sol. Qed.
 
-Lemma series_sol : forall G H,
-  H <| G -> solvable G = solvable H && solvable (G / H).
+Lemma series_sol G H : H <| G -> solvable G = solvable H && solvable (G / H).
 Proof.
-move=> G H; case/andP=> sHG nHG; apply/idP/andP=> [solG | [solH solGH]].
+case/andP=> sHG nHG; apply/idP/andP=> [solG | [solH solGH]].
   by rewrite quotient_sol // (solvableS sHG).
-apply/forallP=> K; rewrite subsetI; apply/implyP; case/andP=> sKG sK'K.
+apply/forall_inP=> K /subsetIP[sKG sK'K].
 suffices sKH: K \subset H.
   by apply: (implyP (forallP solH K)); rewrite subsetI sKH.
 have nHK := subset_trans sKG nHG.

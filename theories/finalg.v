@@ -14,7 +14,7 @@ Require Import ssralg finset fingroup morphism perm action.
 (* Note that a finFieldType is canonically decidable. All these structures   *)
 (* can be derived using [xxxType of T] forms, e.g., if R has both canonical  *)
 (* finType and ringType structures, then                                     *)
-(*     Canonical Structure R_finRingType := Eval hnf in [finRingType of R].  *)
+(*     Canonical R_finRingType := Eval hnf in [finRingType of R].            *)
 (* declares the derived finRingType structure for R. As the implementation   *)
 (* of the derivation is somewhat involved, the Eval hnf normalization is     *)
 (* strongly recommended.                                                     *)
@@ -40,18 +40,14 @@ Local Notation mixin_of T b := (Finite.mixin_of (EqType T b)).
 
 Section Generic.
 
-(* The BF-prefixed bound variable names are a backward-compatibility patch
-   between coq-8.2-1 and coq-trunk r12661 and later 
-*)
-
 (* Implicits *)
-Variables (BFtype base_type : Type) (BFclass_of base_of : Type -> Type).
+Variables (type base_type : Type) (class_of base_of : Type -> Type).
 Variable to_choice : forall T, base_of T -> Choice.class_of T.
 Variable base_sort : base_type -> Type.
 
 (* Explicits *)
-Variable Pack : forall T, BFclass_of T -> Type -> BFtype.
-Variable Class : forall T b, mixin_of T (to_choice b) -> BFclass_of T.
+Variable Pack : forall T, class_of T -> Type -> type.
+Variable Class : forall T b, mixin_of T (to_choice b) -> class_of T.
 Variable base_class : forall bT, base_of (base_sort bT).
 
 Definition gen_pack T :=
@@ -62,7 +58,7 @@ Definition gen_pack T :=
 End Generic.
 
 Implicit Arguments
-   gen_pack [BFtype base_type BFclass_of base_of to_choice base_sort].
+  gen_pack [type base_type class_of base_of to_choice base_sort].
 Local Notation fin_ c := (@Finite.Class _ c c).
 Local Notation do_pack pack T := (pack T _ _ id _ _ id).
 Import GRing.Theory.
@@ -108,25 +104,25 @@ Coercion mixin : class_of >-> mixin_of.
 Coercion sort : type >-> Sortclass.
 Bind Scope ring_scope with sort.
 Coercion eqType : type >-> Equality.type.
-Canonical Structure eqType.
+Canonical eqType.
 Coercion choiceType : type >-> Choice.type.
-Canonical Structure choiceType.
+Canonical choiceType.
 Coercion countType : type >-> Countable.type.
-Canonical Structure countType.
+Canonical countType.
 Coercion finType : type >-> Finite.type.
-Canonical Structure finType.
+Canonical finType.
 Coercion zmodType : type >-> GRing.Zmodule.type.
-Canonical Structure zmodType.
-Canonical Structure join_finType.
+Canonical zmodType.
+Canonical join_finType.
 Notation finZmodType := type.
 Notation "[ 'finZmodType' 'of' T ]" := (do_pack pack T)
   (at level 0, format "[ 'finZmodType'  'of'  T ]") : form_scope.
 Coercion baseFinGroupType : type >-> FinGroup.base_type.
-Canonical Structure baseFinGroupType.
+Canonical baseFinGroupType.
 Coercion finGroupType : type >-> FinGroup.type.
-Canonical Structure finGroupType.
-Canonical Structure join_baseFinGroupType.
-Canonical Structure join_finGroupType.
+Canonical finGroupType.
+Canonical join_baseFinGroupType.
+Canonical join_finGroupType.
 Notation "[ 'baseFinGroupType' 'of' R 'for' +%R ]" :=
     (BaseFinGroupType R (groupMixin _))
   (at level 0, format "[ 'baseFinGroupType'  'of'  R  'for'  +%R ]")
@@ -144,13 +140,13 @@ Section AdditiveGroup.
 Variable U : finZmodType.
 Implicit Types x y : U.
 
-Lemma zmod1gE : 1%g = 0 :> U.                    Proof. by []. Qed.
-Lemma zmodVgE : forall x, x^-1%g = - x.          Proof. by []. Qed.
-Lemma zmodMgE : forall x y, (x * y)%g = x + y.   Proof. by []. Qed.
-Lemma zmodXgE : forall n x, (x ^+ n)%g = x *+ n. Proof. by []. Qed.
-Lemma zmod_mulgC : forall x y, commute x y.      Proof. exact: GRing.addrC. Qed.
-Lemma zmod_abelian : forall A : {set U}, abelian A.
-Proof. move=> A; apply/centsP=> x _ y _; exact: zmod_mulgC. Qed.
+Lemma zmod1gE : 1%g = 0 :> U.            Proof. by []. Qed.
+Lemma zmodVgE x : x^-1%g = - x.          Proof. by []. Qed.
+Lemma zmodMgE x y : (x * y)%g = x + y.   Proof. by []. Qed.
+Lemma zmodXgE n x : (x ^+ n)%g = x *+ n. Proof. by []. Qed.
+Lemma zmod_mulgC x y : commute x y.      Proof. exact: GRing.addrC. Qed.
+Lemma zmod_abelian (A : {set U}) : abelian A.
+Proof. by apply/centsP=> x _ y _; exact: zmod_mulgC. Qed.
 
 End AdditiveGroup.
 
@@ -193,28 +189,28 @@ Coercion base2 : class_of >-> Zmodule.class_of.
 Coercion sort : type >-> Sortclass.
 Bind Scope ring_scope with sort.
 Coercion eqType : type >-> Equality.type.
-Canonical Structure eqType.
+Canonical eqType.
 Coercion choiceType : type >-> Choice.type.
-Canonical Structure choiceType.
+Canonical choiceType.
 Coercion countType : type >-> Countable.type.
-Canonical Structure countType.
+Canonical countType.
 Coercion finType : type >-> Finite.type.
-Canonical Structure finType.
+Canonical finType.
 Coercion zmodType : type >-> GRing.Zmodule.type.
-Canonical Structure zmodType.
+Canonical zmodType.
 Coercion finZmodType : type >-> Zmodule.type.
-Canonical Structure finZmodType.
+Canonical finZmodType.
 Coercion ringType : type >-> GRing.Ring.type.
-Canonical Structure ringType.
-Canonical Structure join_finType.
-Canonical Structure join_finZmodType.
+Canonical ringType.
+Canonical join_finType.
+Canonical join_finZmodType.
 Notation finRingType := type.
 Notation "[ 'finRingType' 'of' T ]" := (do_pack pack T)
   (at level 0, format "[ 'finRingType'  'of'  T ]") : form_scope.
-Canonical Structure baseFinGroupType.
-Canonical Structure finGroupType.
-Canonical Structure join_baseFinGroupType.
-Canonical Structure join_finGroupType.
+Canonical baseFinGroupType.
+Canonical finGroupType.
+Canonical join_baseFinGroupType.
+Canonical join_finGroupType.
 End Exports.
 
 Section Unit.
@@ -237,9 +233,9 @@ rewrite /inv => x Ux; case: pickP => [y | no_y]; last by case/pred0P: Ux.
 by case/andP; move/eqP.
 Qed.
 
-Lemma intro_unit : forall x y, y * x = 1 /\ x * y = 1 -> unit x.
+Lemma intro_unit x y : y * x = 1 /\ x * y = 1 -> unit x.
 Proof.
-by move=> x y [yx1 xy1]; apply/existsP; exists y; rewrite /is_inv xy1 yx1 !eqxx.
+by case=> yx1 xy1; apply/existsP; exists y; rewrite /is_inv xy1 yx1 !eqxx.
 Qed.
 
 Lemma invr_out : {in predC unit, inv =1 id}.
@@ -297,33 +293,33 @@ Coercion base2 : class_of >-> Ring.class_of.
 Coercion sort : type >-> Sortclass.
 Bind Scope ring_scope with sort.
 Coercion eqType : type >-> Equality.type.
-Canonical Structure eqType.
+Canonical eqType.
 Coercion choiceType : type >-> Choice.type.
-Canonical Structure choiceType.
+Canonical choiceType.
 Coercion countType : type >-> Countable.type.
-Canonical Structure countType.
+Canonical countType.
 Coercion finType : type >-> Finite.type.
-Canonical Structure finType.
+Canonical finType.
 Coercion zmodType : type >-> GRing.Zmodule.type.
-Canonical Structure zmodType.
+Canonical zmodType.
 Coercion finZmodType : type >-> Zmodule.type.
-Canonical Structure finZmodType.
+Canonical finZmodType.
 Coercion ringType : type >-> GRing.Ring.type.
-Canonical Structure ringType.
+Canonical ringType.
 Coercion finRingType : type >-> Ring.type.
-Canonical Structure finRingType.
+Canonical finRingType.
 Coercion comRingType : type >-> GRing.ComRing.type.
-Canonical Structure comRingType.
-Canonical Structure join_finType.
-Canonical Structure join_finZmodType.
-Canonical Structure join_finRingType.
+Canonical comRingType.
+Canonical join_finType.
+Canonical join_finZmodType.
+Canonical join_finRingType.
 Notation finComRingType := FinRing.ComRing.type.
 Notation "[ 'finComRingType' 'of' T ]" := (do_pack pack T)
   (at level 0, format "[ 'finComRingType'  'of'  T ]") : form_scope.
-Canonical Structure baseFinGroupType.
-Canonical Structure finGroupType.
-Canonical Structure join_baseFinGroupType.
-Canonical Structure join_finGroupType.
+Canonical baseFinGroupType.
+Canonical finGroupType.
+Canonical join_baseFinGroupType.
+Canonical join_finGroupType.
 End Exports.
 
 End ComRing.
@@ -372,33 +368,33 @@ Coercion base2 : class_of >-> Ring.class_of.
 Coercion sort : type >-> Sortclass.
 Bind Scope ring_scope with sort.
 Coercion eqType : type >-> Equality.type.
-Canonical Structure eqType.
+Canonical eqType.
 Coercion choiceType : type >-> Choice.type.
-Canonical Structure choiceType.
+Canonical choiceType.
 Coercion countType : type >-> Countable.type.
-Canonical Structure countType.
+Canonical countType.
 Coercion finType : type >-> Finite.type.
-Canonical Structure finType.
+Canonical finType.
 Coercion zmodType : type >-> GRing.Zmodule.type.
-Canonical Structure zmodType.
+Canonical zmodType.
 Coercion finZmodType : type >-> Zmodule.type.
-Canonical Structure finZmodType.
+Canonical finZmodType.
 Coercion ringType : type >-> GRing.Ring.type.
-Canonical Structure ringType.
+Canonical ringType.
 Coercion finRingType : type >-> Ring.type.
-Canonical Structure finRingType.
+Canonical finRingType.
 Coercion unitRingType : type >-> GRing.UnitRing.type.
-Canonical Structure unitRingType.
-Canonical Structure join_finType.
-Canonical Structure join_finZmodType.
-Canonical Structure join_finRingType.
+Canonical unitRingType.
+Canonical join_finType.
+Canonical join_finZmodType.
+Canonical join_finRingType.
 Notation finUnitRingType := FinRing.UnitRing.type.
 Notation "[ 'finUnitRingType' 'of' T ]" := (do_pack pack T)
   (at level 0, format "[ 'finUnitRingType'  'of'  T ]") : form_scope.
-Canonical Structure baseFinGroupType.
-Canonical Structure finGroupType.
-Canonical Structure join_baseFinGroupType.
-Canonical Structure join_finGroupType.
+Canonical baseFinGroupType.
+Canonical finGroupType.
+Canonical join_baseFinGroupType.
+Canonical join_finGroupType.
 End Exports.
 
 End UnitRing.
@@ -413,27 +409,27 @@ Bind Scope group_scope with unit_of.
 
 Let phR := Phant R.
 Local Notation uT := (unit_of phR).
-Definition uval (u : uT) := let: Unit x _ := u in x.
+Implicit Types u v : uT.
+Definition uval u := let: Unit x _ := u in x.
 
-Canonical Structure unit_subType := [subType for uval by @unit_of_rect phR].
+Canonical unit_subType := [subType for uval by @unit_of_rect phR].
 Definition unit_eqMixin := Eval hnf in [eqMixin of uT by <:].
-Canonical Structure unit_eqType := Eval hnf in EqType uT unit_eqMixin.
+Canonical unit_eqType := Eval hnf in EqType uT unit_eqMixin.
 Definition unit_choiceMixin := [choiceMixin of uT by <:].
-Canonical Structure unit_choiceType :=
-  Eval hnf in ChoiceType uT unit_choiceMixin.
+Canonical unit_choiceType := Eval hnf in ChoiceType uT unit_choiceMixin.
 Definition unit_countMixin := [countMixin of uT by <:].
-Canonical Structure unit_countType := Eval hnf in CountType uT unit_countMixin.
-Canonical Structure unit_subCountType := Eval hnf in [subCountType of uT].
+Canonical unit_countType := Eval hnf in CountType uT unit_countMixin.
+Canonical unit_subCountType := Eval hnf in [subCountType of uT].
 Definition unit_finMixin := [finMixin of uT by <:].
-Canonical Structure unit_finType := Eval hnf in FinType uT unit_finMixin.
-Canonical Structure unit_subFinType := Eval hnf in [subFinType of uT].
+Canonical unit_finType := Eval hnf in FinType uT unit_finMixin.
+Canonical unit_subFinType := Eval hnf in [subFinType of uT].
 
 Definition unit1 := Unit phR (@GRing.unitr1 _).
-Lemma unit_inv_proof : forall u : uT, GRing.unit (val u)^-1.
-Proof. by move=> u; rewrite GRing.unitr_inv ?(valP u). Qed.
+Lemma unit_inv_proof u : GRing.unit (val u)^-1.
+Proof. by rewrite GRing.unitr_inv ?(valP u). Qed.
 Definition unit_inv u := Unit phR (unit_inv_proof u).
-Lemma unit_mul_proof : forall u v : uT, GRing.unit (val u * val v).
-Proof. by move=> u v; rewrite (GRing.unitr_mulr _ (valP u)) ?(valP v). Qed.
+Lemma unit_mul_proof u v : GRing.unit (val u * val v).
+Proof. by rewrite (GRing.unitr_mulr _ (valP u)) ?(valP v). Qed.
 Definition unit_mul u v := Unit phR (unit_mul_proof u v).
 Lemma unit_muluA : associative unit_mul.
 Proof. move=> u v w; apply: val_inj; exact: GRing.mulrA. Qed.
@@ -443,14 +439,14 @@ Lemma unit_mulVu : left_inverse unit1 unit_inv unit_mul.
 Proof. move=> u; apply: val_inj; exact: GRing.mulVr (valP u). Qed.
 
 Definition unit_GroupMixin := FinGroup.Mixin unit_muluA unit_mul1u unit_mulVu.
-Canonical Structure unit_baseFinGroupType :=
+Canonical unit_baseFinGroupType :=
   Eval hnf in BaseFinGroupType uT unit_GroupMixin.
-Canonical Structure unit_finGroupType := Eval hnf in FinGroupType unit_mulVu.
+Canonical unit_finGroupType := Eval hnf in FinGroupType unit_mulVu.
 
-Definition unit_act x (u : uT) := x * val u.
-Lemma unit_actE : forall x u, unit_act x u = x * val u. Proof. by []. Qed.
+Definition unit_act x u := x * val u.
+Lemma unit_actE x u : unit_act x u = x * val u. Proof. by []. Qed.
 
-Canonical Structure unit_action :=
+Canonical unit_action :=
   @TotalAction _ _ unit_act (@GRing.mulr1 _) (fun _ _ _ => GRing.mulrA _ _ _).
 Lemma unit_is_groupAction : @is_groupAction _ R setT setT unit_action.
 Proof.
@@ -458,23 +454,23 @@ move=> u _ /=; rewrite inE; apply/andP; split.
   by apply/subsetP=> x _; rewrite inE.
 by apply/morphicP=> x y _ _; rewrite !actpermE /= [_ u]GRing.mulr_addl.
 Qed.
-Canonical Structure unit_groupAction := GroupAction unit_is_groupAction.
+Canonical unit_groupAction := GroupAction unit_is_groupAction.
 
 End UnitsGroup.
 
 Module Import UnitsGroupExports.
 Bind Scope group_scope with unit_of.
-Canonical Structure unit_subType.
-Canonical Structure unit_eqType.
-Canonical Structure unit_choiceType.
-Canonical Structure unit_countType.
-Canonical Structure unit_subCountType.
-Canonical Structure unit_finType.
-Canonical Structure unit_subFinType.
-Canonical Structure unit_baseFinGroupType.
-Canonical Structure unit_finGroupType.
-Canonical Structure unit_action.
-Canonical Structure unit_groupAction.
+Canonical unit_subType.
+Canonical unit_eqType.
+Canonical unit_choiceType.
+Canonical unit_countType.
+Canonical unit_subCountType.
+Canonical unit_finType.
+Canonical unit_subFinType.
+Canonical unit_baseFinGroupType.
+Canonical unit_finGroupType.
+Canonical unit_action.
+Canonical unit_groupAction.
 End UnitsGroupExports.
 
 Module ComUnitRing.
@@ -532,46 +528,46 @@ Coercion base3 : class_of >-> UnitRing.class_of.
 Coercion sort : type >-> Sortclass.
 Bind Scope ring_scope with sort.
 Coercion eqType : type >-> Equality.type.
-Canonical Structure eqType.
+Canonical eqType.
 Coercion choiceType : type >-> Choice.type.
-Canonical Structure choiceType.
+Canonical choiceType.
 Coercion countType : type >-> Countable.type.
-Canonical Structure countType.
+Canonical countType.
 Coercion finType : type >-> Finite.type.
-Canonical Structure finType.
+Canonical finType.
 Coercion zmodType : type >-> GRing.Zmodule.type.
-Canonical Structure zmodType.
+Canonical zmodType.
 Coercion finZmodType : type >-> Zmodule.type.
-Canonical Structure finZmodType.
+Canonical finZmodType.
 Coercion ringType : type >-> GRing.Ring.type.
-Canonical Structure ringType.
+Canonical ringType.
 Coercion finRingType : type >-> Ring.type.
-Canonical Structure finRingType.
+Canonical finRingType.
 Coercion comRingType : type >-> GRing.ComRing.type.
-Canonical Structure comRingType.
+Canonical comRingType.
 Coercion finComRingType : type >-> ComRing.type.
-Canonical Structure finComRingType.
+Canonical finComRingType.
 Coercion unitRingType : type >-> GRing.UnitRing.type.
-Canonical Structure unitRingType.
+Canonical unitRingType.
 Coercion finUnitRingType : type >-> UnitRing.type.
-Canonical Structure finUnitRingType.
+Canonical finUnitRingType.
 Coercion comUnitRingType : type >-> GRing.ComUnitRing.type.
-Canonical Structure comUnitRingType.
-Canonical Structure join_finType.
-Canonical Structure join_finZmodType.
-Canonical Structure join_finRingType.
-Canonical Structure join_finComRingType.
-Canonical Structure join_finUnitRingType.
-Canonical Structure ujoin_finComRingType.
-Canonical Structure cjoin_finUnitRingType.
-Canonical Structure fcjoin_finUnitRingType.
+Canonical comUnitRingType.
+Canonical join_finType.
+Canonical join_finZmodType.
+Canonical join_finRingType.
+Canonical join_finComRingType.
+Canonical join_finUnitRingType.
+Canonical ujoin_finComRingType.
+Canonical cjoin_finUnitRingType.
+Canonical fcjoin_finUnitRingType.
 Notation finComUnitRingType := FinRing.ComUnitRing.type.
 Notation "[ 'finComUnitRingType' 'of' T ]" := (do_pack pack T)
   (at level 0, format "[ 'finComUnitRingType'  'of'  T ]") : form_scope.
-Canonical Structure baseFinGroupType.
-Canonical Structure finGroupType.
-Canonical Structure join_baseFinGroupType.
-Canonical Structure join_finGroupType.
+Canonical baseFinGroupType.
+Canonical finGroupType.
+Canonical join_baseFinGroupType.
+Canonical join_finGroupType.
 End Exports.
 
 End ComUnitRing.
@@ -629,48 +625,48 @@ Coercion base2 : class_of >-> ComUnitRing.class_of.
 Coercion sort : type >-> Sortclass.
 Bind Scope ring_scope with sort.
 Coercion eqType : type >-> Equality.type.
-Canonical Structure eqType.
+Canonical eqType.
 Coercion choiceType : type >-> Choice.type.
-Canonical Structure choiceType.
+Canonical choiceType.
 Coercion countType : type >-> Countable.type.
-Canonical Structure countType.
+Canonical countType.
 Coercion finType : type >-> Finite.type.
-Canonical Structure finType.
+Canonical finType.
 Coercion zmodType : type >-> GRing.Zmodule.type.
-Canonical Structure zmodType.
+Canonical zmodType.
 Coercion finZmodType : type >-> Zmodule.type.
-Canonical Structure finZmodType.
+Canonical finZmodType.
 Coercion ringType : type >-> GRing.Ring.type.
-Canonical Structure ringType.
+Canonical ringType.
 Coercion finRingType : type >-> Ring.type.
-Canonical Structure finRingType.
+Canonical finRingType.
 Coercion comRingType : type >-> GRing.ComRing.type.
-Canonical Structure comRingType.
+Canonical comRingType.
 Coercion finComRingType : type >-> ComRing.type.
-Canonical Structure finComRingType.
+Canonical finComRingType.
 Coercion unitRingType : type >-> GRing.UnitRing.type.
-Canonical Structure unitRingType.
+Canonical unitRingType.
 Coercion finUnitRingType : type >-> UnitRing.type.
-Canonical Structure finUnitRingType.
+Canonical finUnitRingType.
 Coercion comUnitRingType : type >-> GRing.ComUnitRing.type.
-Canonical Structure comUnitRingType.
+Canonical comUnitRingType.
 Coercion finComUnitRingType : type >-> ComUnitRing.type.
-Canonical Structure finComUnitRingType.
+Canonical finComUnitRingType.
 Coercion idomainType : type >-> GRing.IntegralDomain.type.
-Canonical Structure idomainType.
-Canonical Structure join_finType.
-Canonical Structure join_finZmodType.
-Canonical Structure join_finRingType.
-Canonical Structure join_finComRingType.
-Canonical Structure join_finUnitRingType.
-Canonical Structure join_finComUnitRingType.
+Canonical idomainType.
+Canonical join_finType.
+Canonical join_finZmodType.
+Canonical join_finRingType.
+Canonical join_finComRingType.
+Canonical join_finUnitRingType.
+Canonical join_finComUnitRingType.
 Notation finIdomainType := FinRing.IntegralDomain.type.
 Notation "[ 'finIdomainType' 'of' T ]" := (do_pack pack T)
   (at level 0, format "[ 'finIdomainType'  'of'  T ]") : form_scope.
-Canonical Structure baseFinGroupType.
-Canonical Structure finGroupType.
-Canonical Structure join_baseFinGroupType.
-Canonical Structure join_finGroupType.
+Canonical baseFinGroupType.
+Canonical finGroupType.
+Canonical join_baseFinGroupType.
+Canonical join_finGroupType.
 End Exports.
 
 End IntegralDomain.
@@ -731,53 +727,53 @@ Coercion base2 : class_of >-> IntegralDomain.class_of.
 Coercion sort : type >-> Sortclass.
 Bind Scope ring_scope with sort.
 Coercion eqType : type >-> Equality.type.
-Canonical Structure eqType.
+Canonical eqType.
 Coercion choiceType : type >-> Choice.type.
-Canonical Structure choiceType.
+Canonical choiceType.
 Coercion countType : type >-> Countable.type.
-Canonical Structure countType.
+Canonical countType.
 Coercion finType : type >-> Finite.type.
-Canonical Structure finType.
+Canonical finType.
 Coercion zmodType : type >-> GRing.Zmodule.type.
-Canonical Structure zmodType.
+Canonical zmodType.
 Coercion finZmodType : type >-> Zmodule.type.
-Canonical Structure finZmodType.
+Canonical finZmodType.
 Coercion ringType : type >-> GRing.Ring.type.
-Canonical Structure ringType.
+Canonical ringType.
 Coercion finRingType : type >-> Ring.type.
-Canonical Structure finRingType.
+Canonical finRingType.
 Coercion comRingType : type >-> GRing.ComRing.type.
-Canonical Structure comRingType.
+Canonical comRingType.
 Coercion finComRingType : type >-> ComRing.type.
-Canonical Structure finComRingType.
+Canonical finComRingType.
 Coercion unitRingType : type >-> GRing.UnitRing.type.
-Canonical Structure unitRingType.
+Canonical unitRingType.
 Coercion finUnitRingType : type >-> UnitRing.type.
-Canonical Structure finUnitRingType.
+Canonical finUnitRingType.
 Coercion comUnitRingType : type >-> GRing.ComUnitRing.type.
-Canonical Structure comUnitRingType.
+Canonical comUnitRingType.
 Coercion finComUnitRingType : type >-> ComUnitRing.type.
-Canonical Structure finComUnitRingType.
+Canonical finComUnitRingType.
 Coercion idomainType : type >-> GRing.IntegralDomain.type.
-Canonical Structure idomainType.
+Canonical idomainType.
 Coercion finIdomainType : type >-> IntegralDomain.type.
-Canonical Structure finIdomainType.
+Canonical finIdomainType.
 Coercion fieldType : type >-> GRing.Field.type.
-Canonical Structure fieldType.
-Canonical Structure join_finType.
-Canonical Structure join_finZmodType.
-Canonical Structure join_finRingType.
-Canonical Structure join_finComRingType.
-Canonical Structure join_finUnitRingType.
-Canonical Structure join_finComUnitRingType.
-Canonical Structure join_finIdomainType.
+Canonical fieldType.
+Canonical join_finType.
+Canonical join_finZmodType.
+Canonical join_finRingType.
+Canonical join_finComRingType.
+Canonical join_finUnitRingType.
+Canonical join_finComUnitRingType.
+Canonical join_finIdomainType.
 Notation finFieldType := FinRing.Field.type.
 Notation "[ 'finFieldType' 'of' T ]" := (do_pack pack T)
   (at level 0, format "[ 'finFieldType'  'of'  T ]") : form_scope.
-Canonical Structure baseFinGroupType.
-Canonical Structure finGroupType.
-Canonical Structure join_baseFinGroupType.
-Canonical Structure join_finGroupType.
+Canonical baseFinGroupType.
+Canonical finGroupType.
+Canonical join_baseFinGroupType.
+Canonical join_finGroupType.
 End Exports.
 
 End Field.
@@ -838,16 +834,16 @@ End Joins.
 
 Module Exports.
 Coercion type : Field.type >-> GRing.DecidableField.type.
-Canonical Structure type.
-Canonical Structure finType.
-Canonical Structure finZmodType.
-Canonical Structure finRingType.
-Canonical Structure finUnitRingType.
-Canonical Structure finComRingType.
-Canonical Structure finComUnitRingType.
-Canonical Structure finIdomainType.
-Canonical Structure baseFinGroupType.
-Canonical Structure finGroupType.
+Canonical type.
+Canonical finType.
+Canonical finZmodType.
+Canonical finRingType.
+Canonical finUnitRingType.
+Canonical finComRingType.
+Canonical finComUnitRingType.
+Canonical finIdomainType.
+Canonical baseFinGroupType.
+Canonical finGroupType.
 End Exports.
 
 End DecField.
@@ -893,28 +889,28 @@ Coercion base2 : class_of >-> Zmodule.class_of.
 Coercion sort : type >-> Sortclass.
 Bind Scope ring_scope with sort.
 Coercion eqType : type >-> Equality.type.
-Canonical Structure eqType.
+Canonical eqType.
 Coercion choiceType : type >-> Choice.type.
-Canonical Structure choiceType.
+Canonical choiceType.
 Coercion countType : type >-> Countable.type.
-Canonical Structure countType.
+Canonical countType.
 Coercion finType : type >-> Finite.type.
-Canonical Structure finType.
+Canonical finType.
 Coercion zmodType : type >-> GRing.Zmodule.type.
-Canonical Structure zmodType.
+Canonical zmodType.
 Coercion finZmodType : type >-> Zmodule.type.
-Canonical Structure finZmodType.
+Canonical finZmodType.
 Coercion lmodType : type >-> GRing.Lmodule.type.
-Canonical Structure lmodType.
-Canonical Structure join_finType.
-Canonical Structure join_finZmodType.
+Canonical lmodType.
+Canonical join_finType.
+Canonical join_finZmodType.
 Notation finLmodType R := (FinRing.Lmodule.type (Phant R)).
 Notation "[ 'finLmodType' R 'of' T ]" := (do_pack (@pack _ (Phant R)) T)
   (at level 0, format "[ 'finLmodType'  R  'of'  T ]") : form_scope.
-Canonical Structure baseFinGroupType.
-Canonical Structure finGroupType.
-Canonical Structure join_baseFinGroupType.
-Canonical Structure join_finGroupType.
+Canonical baseFinGroupType.
+Canonical finGroupType.
+Canonical join_baseFinGroupType.
+Canonical join_finGroupType.
 End Exports.
 
 End Lmodule.
@@ -974,41 +970,41 @@ Coercion base3 : class_of >-> Lmodule.class_of.
 Coercion sort : type >-> Sortclass.
 Bind Scope ring_scope with sort.
 Coercion eqType : type >-> Equality.type.
-Canonical Structure eqType.
+Canonical eqType.
 Coercion choiceType : type >-> Choice.type.
-Canonical Structure choiceType.
+Canonical choiceType.
 Coercion countType : type >-> Countable.type.
-Canonical Structure countType.
+Canonical countType.
 Coercion finType : type >-> Finite.type.
-Canonical Structure finType.
+Canonical finType.
 Coercion zmodType : type >-> GRing.Zmodule.type.
-Canonical Structure zmodType.
+Canonical zmodType.
 Coercion finZmodType : type >-> Zmodule.type.
-Canonical Structure finZmodType.
+Canonical finZmodType.
 Coercion ringType : type >-> GRing.Ring.type.
-Canonical Structure ringType.
+Canonical ringType.
 Coercion finRingType : type >-> Ring.type.
-Canonical Structure finRingType.
+Canonical finRingType.
 Coercion lmodType : type >-> GRing.Lmodule.type.
-Canonical Structure lmodType.
+Canonical lmodType.
 Coercion finLmodType : type >-> Lmodule.type.
-Canonical Structure finLmodType.
+Canonical finLmodType.
 Coercion lalgType : type >-> GRing.Lalgebra.type.
-Canonical Structure lalgType.
-Canonical Structure join_finType.
-Canonical Structure join_finZmodType.
-Canonical Structure join_finLmodType.
-Canonical Structure join_finRingType.
-Canonical Structure rjoin_finLmodType.
-Canonical Structure ljoin_finRingType.
-Canonical Structure fljoin_finRingType.
+Canonical lalgType.
+Canonical join_finType.
+Canonical join_finZmodType.
+Canonical join_finLmodType.
+Canonical join_finRingType.
+Canonical rjoin_finLmodType.
+Canonical ljoin_finRingType.
+Canonical fljoin_finRingType.
 Notation finLalgType R := (FinRing.Lalgebra.type (Phant R)).
 Notation "[ 'finLalgType' R 'of' T ]" := (do_pack (@pack _ (Phant R)) T)
   (at level 0, format "[ 'finLalgType'  R  'of'  T ]") : form_scope.
-Canonical Structure baseFinGroupType.
-Canonical Structure finGroupType.
-Canonical Structure join_baseFinGroupType.
-Canonical Structure join_finGroupType.
+Canonical baseFinGroupType.
+Canonical finGroupType.
+Canonical join_baseFinGroupType.
+Canonical join_finGroupType.
 End Exports.
 
 End Lalgebra.
@@ -1065,43 +1061,43 @@ Coercion base2 : class_of >-> Lalgebra.class_of.
 Coercion sort : type >-> Sortclass.
 Bind Scope ring_scope with sort.
 Coercion eqType : type >-> Equality.type.
-Canonical Structure eqType.
+Canonical eqType.
 Coercion choiceType : type >-> Choice.type.
-Canonical Structure choiceType.
+Canonical choiceType.
 Coercion countType : type >-> Countable.type.
-Canonical Structure countType.
+Canonical countType.
 Coercion finType : type >-> Finite.type.
-Canonical Structure finType.
+Canonical finType.
 Coercion zmodType : type >-> GRing.Zmodule.type.
-Canonical Structure zmodType.
+Canonical zmodType.
 Coercion finZmodType : type >-> Zmodule.type.
-Canonical Structure finZmodType.
+Canonical finZmodType.
 Coercion ringType : type >-> GRing.Ring.type.
-Canonical Structure ringType.
+Canonical ringType.
 Coercion finRingType : type >-> Ring.type.
-Canonical Structure finRingType.
+Canonical finRingType.
 Coercion lmodType : type >-> GRing.Lmodule.type.
-Canonical Structure lmodType.
+Canonical lmodType.
 Coercion finLmodType : type >-> Lmodule.type.
-Canonical Structure finLmodType.
+Canonical finLmodType.
 Coercion lalgType : type >-> GRing.Lalgebra.type.
-Canonical Structure lalgType.
+Canonical lalgType.
 Coercion finLalgType : type >-> Lalgebra.type.
-Canonical Structure finLalgType.
+Canonical finLalgType.
 Coercion algType : type >-> GRing.Algebra.type.
-Canonical Structure algType.
-Canonical Structure join_finType.
-Canonical Structure join_finZmodType.
-Canonical Structure join_finLmodType.
-Canonical Structure join_finRingType.
-Canonical Structure join_finLalgType.
+Canonical algType.
+Canonical join_finType.
+Canonical join_finZmodType.
+Canonical join_finLmodType.
+Canonical join_finRingType.
+Canonical join_finLalgType.
 Notation finAlgType R := (type (Phant R)).
 Notation "[ 'finAlgType' R 'of' T ]" := (do_pack (@pack _ (Phant R)) T)
   (at level 0, format "[ 'finAlgType'  R  'of'  T ]") : form_scope.
-Canonical Structure baseFinGroupType.
-Canonical Structure finGroupType.
-Canonical Structure join_baseFinGroupType.
-Canonical Structure join_finGroupType.
+Canonical baseFinGroupType.
+Canonical finGroupType.
+Canonical join_baseFinGroupType.
+Canonical join_finGroupType.
 End Exports.
 
 End Algebra.
@@ -1177,61 +1173,61 @@ Coercion base3 : class_of >-> UnitRing.class_of.
 Coercion sort : type >-> Sortclass.
 Bind Scope ring_scope with sort.
 Coercion eqType : type >-> Equality.type.
-Canonical Structure eqType.
+Canonical eqType.
 Coercion choiceType : type >-> Choice.type.
-Canonical Structure choiceType.
+Canonical choiceType.
 Coercion countType : type >-> Countable.type.
-Canonical Structure countType.
+Canonical countType.
 Coercion finType : type >-> Finite.type.
-Canonical Structure finType.
+Canonical finType.
 Coercion zmodType : type >-> GRing.Zmodule.type.
-Canonical Structure zmodType.
+Canonical zmodType.
 Coercion finZmodType : type >-> Zmodule.type.
-Canonical Structure finZmodType.
+Canonical finZmodType.
 Coercion ringType : type >-> GRing.Ring.type.
-Canonical Structure ringType.
+Canonical ringType.
 Coercion finRingType : type >-> Ring.type.
-Canonical Structure finRingType.
+Canonical finRingType.
 Coercion unitRingType : type >-> GRing.UnitRing.type.
-Canonical Structure unitRingType.
+Canonical unitRingType.
 Coercion finUnitRingType : type >-> UnitRing.type.
-Canonical Structure finUnitRingType.
+Canonical finUnitRingType.
 Coercion lmodType : type >-> GRing.Lmodule.type.
-Canonical Structure lmodType.
+Canonical lmodType.
 Coercion finLmodType : type >-> Lmodule.type.
-Canonical Structure finLmodType.
+Canonical finLmodType.
 Coercion lalgType : type >-> GRing.Lalgebra.type.
-Canonical Structure lalgType.
+Canonical lalgType.
 Coercion finLalgType : type >-> Lalgebra.type.
-Canonical Structure finLalgType.
+Canonical finLalgType.
 Coercion algType : type >-> GRing.Algebra.type.
-Canonical Structure algType.
+Canonical algType.
 Coercion finAlgType : type >-> Algebra.type.
-Canonical Structure finAlgType.
+Canonical finAlgType.
 Coercion unitAlgType : type >-> GRing.UnitAlgebra.type.
-Canonical Structure unitAlgType.
-Canonical Structure join_finType.
-Canonical Structure join_finZmodType.
-Canonical Structure join_finLmodType.
-Canonical Structure join_finRingType.
-Canonical Structure join_finLalgType.
-Canonical Structure join_finAlgType.
-Canonical Structure ljoin_finUnitRingType.
-Canonical Structure fljoin_finUnitRingType.
-Canonical Structure njoin_finUnitRingType.
-Canonical Structure fnjoin_finUnitRingType.
-Canonical Structure ajoin_finUnitRingType.
-Canonical Structure fajoin_finUnitRingType.
-Canonical Structure ujoin_finLmodType.
-Canonical Structure ujoin_finLalgType.
-Canonical Structure ujoin_finAlgType.
+Canonical unitAlgType.
+Canonical join_finType.
+Canonical join_finZmodType.
+Canonical join_finLmodType.
+Canonical join_finRingType.
+Canonical join_finLalgType.
+Canonical join_finAlgType.
+Canonical ljoin_finUnitRingType.
+Canonical fljoin_finUnitRingType.
+Canonical njoin_finUnitRingType.
+Canonical fnjoin_finUnitRingType.
+Canonical ajoin_finUnitRingType.
+Canonical fajoin_finUnitRingType.
+Canonical ujoin_finLmodType.
+Canonical ujoin_finLalgType.
+Canonical ujoin_finAlgType.
 Notation finUnitAlgType R := (type (Phant R)).
 Notation "[ 'finUnitAlgType' R 'of' T ]" := (do_pack (@pack _ (Phant R)) T) 
   (at level 0, format "[ 'finUnitAlgType'  R  'of'  T ]") : form_scope.
-Canonical Structure baseFinGroupType.
-Canonical Structure finGroupType.
-Canonical Structure join_baseFinGroupType.
-Canonical Structure join_finGroupType.
+Canonical baseFinGroupType.
+Canonical finGroupType.
+Canonical join_baseFinGroupType.
+Canonical join_finGroupType.
 End Exports.
 
 End UnitAlgebra.

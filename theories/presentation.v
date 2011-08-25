@@ -183,23 +183,23 @@ Implicit Types gT rT : finGroupType.
 
 Import Presentation.
 
-Lemma isoGrp_hom : forall gT (G : {group gT}) p, G \isog Grp p -> G \homg Grp p.
-Proof. move=> gT G p <-; exact: homg_refl. Qed.
+Lemma isoGrp_hom gT (G : {group gT}) p : G \isog Grp p -> G \homg Grp p.
+Proof. by move <-; exact: homg_refl. Qed.
 
-Lemma isoGrpP : forall gT (G : {group gT}) p rT (H : {group rT}),
+Lemma isoGrpP gT (G : {group gT}) p rT (H : {group rT}) :
   G \isog Grp p -> reflect (#|H| = #|G| /\ H \homg Grp p) (H \isog G).
 Proof.
-move=> gT G p rT H isoGp; apply: (iffP idP) => [isoGH | [oH homHp]].
+move=> isoGp; apply: (iffP idP) => [isoGH | [oH homHp]].
   by rewrite (card_isog isoGH) -isoGp isog_hom.
 by rewrite isogEcard isoGp homHp /= oH.
 Qed.
 
-Lemma homGrp_trans : forall rT gT (H : {set rT}) (G : {group gT}) p,
+Lemma homGrp_trans rT gT (H : {set rT}) (G : {group gT}) p :
   H \homg G -> G \homg Grp p -> H \homg Grp p.
 Proof.
-move=> rT gT H G p; case/homgP=> h <-{H}; rewrite /hom; move: {p}(p _) => p.
-have evalG: forall e t, all (mem G) e -> eval (map h e) t = h (eval e t).
-  move=> e t Ge; apply: (@proj2 (eval e t \in G)); elim: t => /=.
+case/homgP=> h <-{H}; rewrite /hom; move: {p}(p _) => p.
+have evalG e t: all (mem G) e -> eval (map h e) t = h (eval e t).
+  move=> Ge; apply: (@proj2 (eval e t \in G)); elim: t => /=.
   - move=> i; case: (leqP (size e) i) => [le_e_i | lt_i_e].
       by rewrite !nth_default ?size_map ?morph1.
     by rewrite (nth_map 1) // [_ \in G](allP Ge) ?mem_nth.
@@ -209,48 +209,45 @@ have evalG: forall e t, all (mem G) e -> eval (map h e) t = h (eval e t).
   - by move=> t1 [Gt1 ->] t2 [Gt2 ->]; rewrite groupM ?morphM.
   - by move=> t1 [Gt1 ->] t2 [Gt2 ->]; rewrite groupJ ?morphJ.
   by move=> t1 [Gt1 ->] t2 [Gt2 ->]; rewrite groupR ?morphR.
-have and_relE: forall x1 x2 r, and_rel x1 x2 r = (x1 == x2) && r :> bool.
-  by move=> xT x1 x2 [|[yT y1 y2]] //=; rewrite andbT.
-have rsatG: forall e f, all (mem G) e -> rel e f NoRel -> rel (map h e) f NoRel.
-  move=> e f Ge; have: NoRel -> NoRel by []; move: NoRel {2 4}NoRel.
+have and_relE xT x1 x2 r: @and_rel xT x1 x2 r = (x1 == x2) && r :> bool.
+  by case: r => //=; rewrite andbT.
+have rsatG e f: all (mem G) e -> rel e f NoRel -> rel (map h e) f NoRel.
+  move=> Ge; have: NoRel -> NoRel by []; move: NoRel {2 4}NoRel.
   elim: f => [x1 x2 | f1 IH1 f2 IH2] r hr IHr; last by apply: IH1; exact: IH2.
   by rewrite !and_relE !evalG //; case/andP; move/eqP->; rewrite eqxx.
 set s := env1; set vT := gT : finType in s *.
 set s' := env1; set vT' := rT : finType in s' *.
-have: forall v, let: Env A e := s v in
+have (v): let: Env A e := s v in
   A \subset G -> all (mem G) e /\ exists v', s' v' = Env (h @* A) (map h e).
-- move=> x; rewrite /= cycle_subG andbT => Gx; rewrite morphim_cycle //.
-  by split; last exists (h x).
+- rewrite /= cycle_subG andbT => Gv; rewrite morphim_cycle //.
+  by split; last exists (h v).
 elim: p 1%N vT vT' s s' => /= [p IHp | f] n vT vT' s s' Gs.
   apply: IHp => [[v x]] /=; case: (s v) {Gs}(Gs v) => A e /= Gs.
   rewrite join_subG cycle_subG; case/andP=> sAG Gx; rewrite Gx.
   have [//|-> [v' def_v']] := Gs; split=> //; exists (v', h x); rewrite def_v'.
   by congr (Env _ _); rewrite morphimY ?cycle_subG // morphim_cycle.
 case/existsP=> v; case: (s v) {Gs}(Gs v) => /= A e Gs.
-rewrite and_relE; case/andP; move/eqP=> defA rel_f.
+rewrite and_relE => /andP[/eqP defA rel_f].
 have{Gs} [|Ge [v' def_v']] := Gs; first by rewrite defA.
 apply/existsP; exists v'; rewrite def_v' and_relE defA eqxx /=.
 by rewrite -map_rev rsatG ?(eq_all_r (mem_rev e)).
 Qed.
 
-Lemma eq_homGrp : forall gT rT (G : {group gT}) (H : {group rT}) p,
+Lemma eq_homGrp gT rT (G : {group gT}) (H : {group rT}) p :
   G \isog H -> (G \homg Grp p) = (H \homg Grp p).
 Proof.
-move=> gT rT G H p; rewrite isogEhom; case/andP=> homGH homHG.
-by apply/idP/idP; exact: homGrp_trans.
+by rewrite isogEhom => /andP[homGH homHG]; apply/idP/idP; exact: homGrp_trans.
 Qed.
 
-Lemma isoGrp_trans : forall gT rT (G : {group gT}) (H : {group rT}) p,
+Lemma isoGrp_trans gT rT (G : {group gT}) (H : {group rT}) p :
   G \isog H -> H \isog Grp p -> G \isog Grp p.
-Proof.
-by move=> gT rT G H p isoGH isoHp kT K; rewrite -isoHp; exact: eq_homgr.
-Qed.
+Proof. by move=> isoGH isoHp kT K; rewrite -isoHp; exact: eq_homgr. Qed.
 
-Lemma intro_isoGrp : forall gT (G : {group gT}) p,
+Lemma intro_isoGrp gT (G : {group gT}) p :
     G \homg Grp p -> (forall rT (H : {group rT}), H \homg Grp p -> H \homg G) ->
   G \isog Grp p.
 Proof.
-move=> gT G p homGp freeG rT H.
+move=> homGp freeG rT H.
 by apply/idP/idP=> [homHp|]; [exact: homGrp_trans homGp | exact: freeG].
 Qed.
 
