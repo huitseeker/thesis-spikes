@@ -1,0 +1,21 @@
+SSRCOQ = ../bin/ssrcoq
+-custom "$(SSRCOQ) $(COQFLAGS) -compile $*" "%.v $(SSRCOQ)" "%.vo" 
+-R ../theories Ssreflect
+-I ../src/
+absevarprop.v
+binders.v
+congr.v
+deferclear.v
+elim.v
+first_n.v
+havesuff.v
+have_view_idiom.v
+ipatalternation.v
+multiview.v
+occarrow.v
+ssrsyntax1.v
+ssrsyntax2.v
+rewpatterns.v
+testmx.v
+wlogletin.v
+wlog_suff.v

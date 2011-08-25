@@ -1,0 +1,75 @@
+## Uncomment for static linking
+## <static>
+#
+#-custom "$(COQBIN)coqmktop -opt -o bin/ssrcoq src/ssreflect.cmx" "src/ssreflect.cmx" bin/ssrcoq
+#-custom "$(COQBIN)coqmktop -o bin/ssrcoq.byte src/ssreflect.cmo" "src/ssreflect.cmo bin/ssrcoq" bin/ssrcoq.byte
+#-custom "$(SSRCOQ) $(COQFLAGS) -compile $*" "%.v $(SSRCOQ)" "%.vo"
+#SSRCOQ = bin/ssrcoq
+#
+## </static>
+
+## Uncomment for dynamic linking
+## <dynamic>
+
+-I src
+
+## </dynamic>
+
+## What follows should be left untouched by the final user of ssreflect
+-R theories Ssreflect
+-R src Ssreflect
+CAMLP4OPTIONS = "-loc loc"
+src/ssreflect.ml
+theories/abelian.v
+theories/action.v
+theories/alt.v
+theories/automorphism.v
+theories/bigop.v
+theories/binomial.v
+theories/center.v
+theories/choice.v
+theories/commutator.v
+theories/cyclic.v
+theories/div.v
+theories/eqtype.v
+theories/extraspecial.v
+theories/extremal.v
+theories/finalg.v
+theories/finfun.v
+theories/fingraph.v
+theories/fingroup.v
+theories/finmodule.v
+theories/finset.v
+theories/fintype.v
+theories/frobenius.v
+theories/gfunctor.v
+theories/gproduct.v
+theories/gseries.v
+theories/hall.v
+theories/jordanholder.v
+theories/matrix.v
+theories/maximal.v
+theories/morphism.v
+theories/mxabelem.v
+theories/mxalgebra.v
+theories/mxpoly.v
+theories/mxrepresentation.v
+theories/nilpotent.v
+theories/path.v
+theories/perm.v
+theories/pgroup.v
+theories/poly.v
+theories/presentation.v
+theories/prime.v
+theories/primitive_action.v
+theories/quotient.v
+theories/seq.v
+theories/ssralg.v
+theories/ssrbool.v
+theories/ssreflect.v
+theories/ssrfun.v
+theories/ssrnat.v
+theories/sylow.v
+theories/tuple.v
+theories/vector.v
+theories/zmodp.v

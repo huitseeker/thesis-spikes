@@ -1,0 +1,149 @@
+INSTALLATION PROCEDURE FOR SSREFLECT WITH COQ 8.3 SYSTEM
+--------------------------------------------------------
+
+
+Summary: - Requirements - Producing the toplevel and compiling the
+theories - Customization of the Proof General Emacs interface -
+Compiling a Coqide interface for ssreflect
+
+REQUIREMENTS 
+============ 
+- Coq version 8.3 (or 8.3pl1)
+- Gnu make version 3.81 or later
+
+Note that the production of a Coqide interface requires the Lablgtk
+development files and the GTK libraries.
+
+PRODUCING THE SSRCOQ TOPLEVEL OR PLUGIN & THEORIES
+==================================================
+
+- We suppose that the Coq system, version 8.3 has been
+installed on your system, using a standard installation process. This
+means:
+  + your PATH variable value makes Coq binaries (coqtop,
+coq_makefile,...) accessible (by default they are put in
+/usr/local/bin).
+  + your Coq libraries are in /usr/local/lib/coq/.
+
+- If your installation of Coq is not standard:
+  + make sure that your PATH variable contains the directory where Coq
+  v8.3 binaries (coqtop, coq_makefile,...) are located.
+  + make sure that you do not have any environment variable named
+  COQTOP, COQLIB or COQBIN. If you are a Windows+Cygwin user, make
+  sure that no such variable occurs in NEITHER Windows NOR Cygwin
+  environment variables.
+  + Set two environment variables COQTOP and COQLIB both
+   to the address of your Coq libraries directory.
+  + Set an environment variable COQBIN to the address of the directory
+    containing your Coq v8.3 binaries.
+  + If you are a Windows user, you may also add these variables
+    as Windows environment variables and update your Windows path. 
+
+- Download and unpack the archive of the ssreflect distribution.
+  Again if you are a Windows user, make sure that the place where
+  you unpack sources should not be under a directory containing a
+  space in its name (like " Documents and Settings" ...).
+
+- Go to the root of the ssreflect directory creating by the previous
+  unpack.
+
+- By default the compilation will produce a dynamically loadable plugin.
+  If you prefer a statically linked toplevel, edit the Make file, comment out
+  the lines between the tags "<dynamic>" and uncomment the ones between the
+  tags "<static>".
+
+- Launch the compilation with the command:
+  	 make
+
+- Note for Mac OS users on a PowerPC: At this point, if you
+  encounter a "stack overflow" error message, then replace
+  the previous command by:
+      	 make OCAMLOPT=ocamlopt.opt
+
+- This compilation should produce:
+  + a binary called ssrcoq, located in the bin/ subdirectory or
+    a dynamically loadable plugin located in the src/ subdirectory
+  + .vo compiled libraries in the theories/ subdirectory
+
+- If you generated a dinamically lodable plugin, you may want to install it
+  in a directory scanned by the Coq system when a "Declare ML Module" directive
+  is executed typing:
+         make install
+  This command will also install .vo files in standard paths known to Coq.
+
+- If you generated a statically linked toplevel you may want to add the path 
+  to this bin/ subdirectory to your PATH variable, or to install the ssrcoq 
+  binary in the same place where other Coq binaries are typing:
+         make install
+  This command will also install .vo files in standard paths known to Coq.
+
+- You can use this ssrcoq executable to compile vernacular .v files with
+  the -compile flag (this also avoids the synchronization problems for
+  coqc under the Windows OS). For instance:
+	  ssrcoq -compile ssreflect
+  produces the ssreflect.vo binary file.
+
+Every Coq vernacular file processed by ssrcoq should import the
+ssreflect library with the line:
+	  Require Import ssreflect.
+
+The tactics described in the documentation will not work properly if this
+library is not loaded. Obviously, the ssreflect.vo file created by the command
+line above also needs to be in the Coq library path.
+
+
+CUSTOMIZATION OF THE PROOF GENERAL EMACS INTERFACE
+==================================================
+
+The ssreflect distribution comes with a small configuration file
+pg-ssr.el to extend ProofGeneral (PG), a generic interface for
+proof assistants based on the customizable text editor Emacs, to the
+syntax of ssreflect.
+
+The >= 3.7 versions of ProofGeneral support this extension.
+
+- Following the installation instructions, unpack the sources of PG in
+a directory, for instance <my-pgssr-location>/ProofGeneral-3.7, and add
+the following line to your .emacs file:
+  - under Unix/MacOS:
+	(load-file
+    "<my-pg-location>/ProofGeneral-3.7/generic/proof-site.el" )
+  - under Windows+Cygwin:
+	(load-file
+    "C:\\<my-pg-location>\\ProofGeneral-3.7\\generic\\proof-site.el")
+where <my-pg-location> is the location of your own ProofGeneral
+directory.
+
+-Immediately after the previous line added to your .emacs, add this
+one:
+	(load-file "<my-pgssr-location>/pg-ssr.el") respectively
+	(load-file "<my-pgssr-location>\\pg-ssr.el") for Windows+Cygwin
+users, where <my-pgssr-location> is the location of your pg-ssr.el file.
+
+Coq sources have a .v extension. Opening any .v file should
+automatically launch ProofGeneral. Try this on a foo.v file.
+
+In the menu 'ProofGeneral', choose the item:
+	'Advanced/Customize/Coq/Coq Prog Name' Change the value of the
+variable to
+	 <my-ssreflect-location>/bin/ssrcoq 
+or
+	<my-ssreflect-location>\\bin\\ssrcoq 
+for Windows+Cygwin users, where <my-ssreflect-location> is the location of
+your coq-8.3 directory.
+
+
+
+COMPILING A COQIDE INTERFACE FOR SSREFLECT
+==========================================
+
+Alternatively, you can build a customized Coqide interface linked with
+ssreflect. After having compiled ssreflect toplevel, go to the src/
+subdirectory and execute the command
+	coqmktop -ide -opt ssreflect.cmx -o ../bin/ssrcoqide This creates
+an ssrcoqide executable in the bin/ subdirectory of the ssreflect
+directory. This ssrcoqide can use as an interface to develop your
+theories to be compiled with ssrcoq. See Chapter 14 of the Coq
+Reference Manual (http://coq.inria.fr/coq/distrib/current/refman/) for
+more information on how to use and configure Coqide.
+

@@ -1,0 +1,63 @@
+	THE SSREFLECT EXTENSION FOR THE COQ SYSTEM
+        ------------------------------------------
+
+
+INSTALLATION
+============
+
+	See the file INSTALL for installation procedure.
+
+
+DOCUMENTATION
+=============
+
+	The documentation of the ssreflect tactics, a brief
+        description of the libraries contained in the theories/ directory
+        of the archive, and a detailed list of the changes made in the last 
+        release is available as an Inria Research Report at
+
+        	http://hal.inria.fr/inria-00258384 
+
+        This online version may be updated between two successive releases
+        of ssreflect.
+
+
+TUTORIAL
+========
+	A brief tutorial of the ssreflect extension can be found in the
+	doc/ directory. The doc/tutorial.v file contains the code of the
+	examples presented in this document.
+	
+	This tutorial is also available as an Inria Technical Report at
+	        http://hal.inria.fr/inria-00407778	
+
+        This online version may be updated between two successive releases
+        of ssreflect.
+
+AVAILABILITY
+============
+
+	Ssreflect files are available at:
+	http://www.msr-inria.inria.fr/Projects/math-components
+
+
+THE SSREFLECT DISCUSSION LIST
+=============================
+
+	The ssreflect list is meant to be a standard way to discuss
+        questions about the ssreflect extension and its use.
+
+	To subscribe to
+		ssreflect@msr-inria.inria.fr
+         please send an email to sympa@msr-inria.inria.fr, whose title is
+         "subscribe ssreflect".
+
+LICENSING
+=========
+
+        This program is free software; you can redistribute it and/or modify
+        it under the terms of the CeCILL B FREE SOFTWARE LICENSE.
+
+        You should have received a copy of the CeCILL B License with this
+        Kit, in the file named "CeCILL-B".
+        If not, visit http://www.cecill.info    
