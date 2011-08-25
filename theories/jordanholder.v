@@ -5,7 +5,7 @@ Require Import bigop finset fingroup morphism automorphism quotient action.
 Require Import gseries.
 
 (******************************************************************************)
-(* This files establishes Jordan-Hölder theorems for finite groups. These     *)
+(* This files establishes Jordan-Holder theorems for finite groups. These     *)
 (* theorems state the uniqueness up to permutation and isomorphism for the    *)
 (* series of quotient built from the successive elements of any composition   *)
 (* series of the same group. These quotients are also called factors of the   *)
@@ -14,8 +14,8 @@ Require Import gseries.
 (* This library defines:                                                      *)
 (*         (G1 / G2)%sec == alias for the pair (G1, G2) of groups in the same *)
 (*                          finGroupType, coerced to the actual quotient group*)
-(*                          G1 / G2. We call this pseudo-quotient a section of*)
-(*                          G1 and G2.                                        *)
+(*                          group G1 / G2. We call this pseudo-quotient a     *)
+(*                          section of G1 and G2.                             *)
 (*    section_isog s1 s2 == s1 and s2 respectively coerce to isomorphic       *)
 (*                          quotient groups.                                  *)
 (*        section_repr s == canonical representative of the isomorphism class *)
@@ -23,7 +23,7 @@ Require Import gseries.
 (*         mksrepr G1 G2 == canonical representative of the isomorphism class *)
 (*                          of (G1 / G2)%sec.                                 *)
 (*         mkfactors G s == if s is [:: s1, s2, ..., sn], constructs the list *)
-(*                      [:: mksrepr G s1, mksrepr s1 s2, ..., mksrepr sn-1 sn]*)
+(*                     [:: mksrepr G s1, mksrepr s1 s2, ..., mksrepr sn-1 sn] *)
 (*             comps G s == s is a composition series for G i.e. s is a       *)
 (*                          decreasing sequence of subgroups of G             *)
 (*                          in which two adjacent elements are maxnormal one  *)
@@ -53,20 +53,18 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-
-Inductive section (gT : finGroupType) : Type := Sec of {group gT} * {group gT}.
+Inductive section (gT : finGroupType) := GSection of {group gT} * {group gT}.
 
 Delimit Scope section_scope with sec.
 Bind Scope section_scope with section.
 
-Definition mkSec (gT : finGroupType)(G1 G2 : {group gT}) := Sec (G1, G2).
+Definition mkSec (gT : finGroupType) (G1 G2 : {group gT}) := GSection (G1, G2).
 
 Infix "/" := mkSec : section_scope.
 
-Coercion pair_of_section gT (s : section gT) := let: Sec u := s in u.
+Coercion pair_of_section gT (s : section gT) := let: GSection u := s in u.
 
-Coercion quotient_of_section gT (s : section gT) : GroupSet.sort _ := 
-  s.1 / s.2.
+Coercion quotient_of_section gT (s : section gT) : GroupSet.sort _ := s.1 / s.2.
 
 Coercion section_group gT (s : section gT) : {group (coset_of s.2)} :=
   Eval hnf in [group of s].
@@ -74,143 +72,114 @@ Coercion section_group gT (s : section gT) : {group (coset_of s.2)} :=
 Section Sections.
 
 Variables (gT : finGroupType).
+Implicit Types (G : {group gT}) (s : section gT).
 
-Implicit Types G : {group gT}.
-Implicit Types s : section gT.
-
-Canonical Structure section_subType :=
-  Eval hnf in [newType for (@pair_of_section _) by (@section_rect gT)].
-Definition section_eqMixin := Eval hnf in [eqMixin of (section _) by <:].
-Canonical Structure section_eqType :=
-  Eval hnf in EqType (section _) section_eqMixin.
-Definition section_choiceMixin := [choiceMixin of (section _) by <:].
-Canonical Structure section_choiceType :=
-  Eval hnf in ChoiceType (section _) section_choiceMixin.
-Definition section_countMixin := [countMixin of (section _) by <:].
-Canonical Structure section_countType :=
-   Eval hnf in CountType (section _) section_countMixin.
-Canonical Structure section_subCountType :=
-  Eval hnf in [subCountType of (section _)].
-Definition section_finMixin := [finMixin of (section _) by <:].
-Canonical Structure section_finType :=
-  Eval hnf in FinType (section _) section_finMixin.
-Canonical Structure section_subFinType := 
-  Eval hnf in [subFinType of (section _)].
-Canonical Structure section_group.
+Canonical section_subType :=
+  Eval hnf in [newType for @pair_of_section gT by @section_rect gT].
+Definition section_eqMixin := Eval hnf in [eqMixin of section gT by <:].
+Canonical section_eqType := Eval hnf in EqType (section gT) section_eqMixin.
+Definition section_choiceMixin := [choiceMixin of section gT by <:].
+Canonical section_choiceType :=
+  Eval hnf in ChoiceType (section gT) section_choiceMixin.
+Definition section_countMixin := [countMixin of section gT by <:].
+Canonical section_countType :=
+  Eval hnf in CountType (section gT) section_countMixin.
+Canonical section_subCountType := Eval hnf in [subCountType of section gT].
+Definition section_finMixin := [finMixin of section gT by <:].
+Canonical section_finType := Eval hnf in FinType (section gT) section_finMixin.
+Canonical section_subFinType := Eval hnf in [subFinType of section gT].
+Canonical section_group.
 
 (* Isomorphic sections *)
 
 Definition section_isog := [rel x y : section gT | x \isog y].
 
 (* A witness of the isomorphism class of a section *)
-Definition section_repr s :=
-  if (pick (section_isog ^~ s)) is Some s then s else (mkSec 1 1)%sec.
+Definition section_repr s := odflt (1 / 1)%sec (pick (section_isog ^~ s)).
 
 Definition mksrepr G1 G2 := section_repr (mkSec G1 G2).
 
-Lemma section_reprP : forall s, (section_repr s) \isog s.
+Lemma section_reprP s : section_repr s \isog s.
 Proof.
-move=> H; rewrite /section_repr; case: pickP => //; move/(_ H).
-by rewrite /= isog_refl.
+by rewrite /section_repr; case: pickP => //= /(_ s); rewrite isog_refl.
 Qed.
 
-Lemma section_repr_isog : forall s1 s2,
+Lemma section_repr_isog s1 s2 :
   s1 \isog s2 -> section_repr s1 = section_repr s2.
 Proof.
-move=> s1 s2 is12; rewrite /section_repr.
-suff siso12 : (section_isog ^~ s1) =1 (section_isog ^~ s2) .
-  by rewrite (eq_pick siso12).
-by move=> x /=; apply:isog_transr.
+by move=> iso12; congr (odflt _ _); apply: eq_pick => s; exact: isog_transr.
 Qed.
-
 
 Definition mkfactors (G : {group gT}) (s : seq {group gT}) :=
   map section_repr (pairmap (@mkSec _) G s).
 
 End Sections.
 
-
-
 Section CompositionSeries.
 
-Variables (gT : finGroupType).
+Variable gT : finGroupType.
 Local Notation gTg := {group gT}.
-
-Implicit Type G : gTg.
-Implicit Type s : seq gTg.
-
+Implicit Types (G : gTg) (s : seq gTg).
 
 Local Notation compo := [rel x y : {set gT} | maxnormal y x x].
 
 Definition comps G s := ((last G s) == 1%G) && compo.-series G s.
 
-Lemma compsP : forall G s, reflect
-  (last G s = 1%G /\  path [rel x y : gTg | maxnormal y x x] G s) (comps G s).
-Proof. by move=> G s; apply: (iffP andP); case; move/eqP. Qed.
+Lemma compsP G s :
+  reflect (last G s = 1%G /\  path [rel x y : gTg | maxnormal y x x] G s)
+          (comps G s).
+Proof. by apply: (iffP andP) => [] [/eqP]. Qed.
 
-Lemma trivg_comps : forall G s, comps G s -> (G :==: 1) = (s == [::]).
+Lemma trivg_comps G s : comps G s -> (G :==: 1) = (s == [::]).
 Proof.
-move=> G s; case/andP=> ls cs; apply/eqP/eqP; last first.
-  by move=> se; rewrite se /= in ls; apply/eqP.
-move=> G1; case: s ls cs => // H s _ /=; case/andP; case/maxgroupP.
-by rewrite G1 /proper sub1set group1 andbF.
+case/andP=> ls cs; apply/eqP/eqP=> [G1 | s1]; last first.
+  by rewrite s1 /= in ls; apply/eqP.
+by case: s {ls} cs => //= H s /andP[/maxgroupp]; rewrite G1 /proper sub1G andbF.
 Qed.
 
-Lemma comps_cons : forall G H s, comps G (H :: s) -> comps H s.
+Lemma comps_cons G H s : comps G (H :: s) -> comps H s.
+Proof. by case/andP => /= ls /andP[_]; rewrite /comps ls. Qed.
+
+Lemma simple_compsP G s : comps G s -> reflect (s = [:: 1%G]) (simple G).
 Proof.
-by move=> G H s; case/andP => /= ls; case/andP=> _ p; rewrite /comps ls.
+move=> cs; apply: (iffP idP) => [|s1]; last first.
+  by rewrite s1 /comps eqxx /= andbT -simple_maxnormal in cs.
+case: s cs => [/trivg_comps/eqP-> | H s]; first by case/simpleP; rewrite eqxx.
+rewrite [comps _ _]andbCA /= => /andP[/maxgroupp maxH /trivg_comps/esym nil_s].
+rewrite simple_maxnormal => /maxgroupP[_ simG].
+have H1: H = 1%G by apply/val_inj/simG; rewrite // sub1G.
+by move: nil_s; rewrite H1 eqxx => /eqP->.
 Qed.
 
-Lemma simple_compsP : forall G s, comps G s ->
-  reflect (s = [:: (1%G : gTg) ]) (simple G).
+Lemma exists_comps (G : gTg) : exists s, comps G s.
 Proof.
-move=> G s cs; apply: (iffP idP); last first.
-  move=> se; move: cs; rewrite se /=; case/andP=> /=.
-  by rewrite andbT simple_maxnormal.
-case: s cs.
-  by rewrite /comps /= andbT; move/eqP->; case/simpleP; rewrite eqxx.
-move=> H s cs sG; apply/eqP; rewrite eqseq_cons -(trivg_comps (comps_cons cs)).
-suff H1: H :=: 1 by rewrite H1 eqxx andbT; apply/eqP; apply: val_inj=> /=.
-case/compsP: cs=> /= ls; case/andP=> mH ps; move: sG; rewrite simple_maxnormal.
-case/maxgroupP=> _; apply; rewrite ?sub1set //.
-by rewrite (maxnormal_proper mH) normal_norm // maxnormal_normal.
-Qed.
-
-Lemma exists_comps : forall G : gTg, exists s, comps G s.
-Proof.
-move=> G; elim: {G} #|G| {1 3}G (leqnn #|G|) => [G | n Hi G cG].
+elim: {G} #|G| {1 3}G (leqnn #|G|) => [G | n IHn G cG].
   by rewrite leqNgt cardG_gt0.
-case/orP: (orbN (simple G)) => [sG | nsG].
-  exists [:: (1%G : gTg) ].
-  by rewrite /comps eqxx /=  -simple_maxnormal andbT.
-case/orP: (orbN (G :==: 1))=> [tG | ntG].
-  by exists (Nil gTg); rewrite /comps /= andbT.
-case: (ex_maxnormal_ntrivg ntG)=> N pmN.
-have cN: #|N| <= n.
-  by rewrite -ltnS (leq_trans _ cG) // proper_card // (maxnormal_proper pmN).
-case: (Hi _ cN)=> s; case/andP=> lasts ps; exists [:: N & s]; rewrite /comps.
-by rewrite last_cons lasts /=  pmN.
+have [sG | nsG] := boolP (simple G).
+  by exists [:: 1%G]; rewrite /comps eqxx /=  -simple_maxnormal andbT.
+have [-> | ntG] := eqVneq G 1%G; first by exists [::]; rewrite /comps eqxx.
+have [N maxN] := ex_maxnormal_ntrivg ntG.
+have [|s /andP[ls cs]] := IHn N.
+  by rewrite -ltnS (leq_trans _ cG) // proper_card // (maxnormal_proper maxN).
+by exists (N :: s); exact/and3P.
 Qed.
-
 
 (******************************************************************************)
 (* The factors associated to two composition series of the same group are     *)
 (* the same up to isomorphism and permutation                                 *)
 (******************************************************************************)
 
-Lemma JordanHolderUniqueness : forall (G : gTg) (s1 s2 : seq gTg),
+Lemma JordanHolderUniqueness (G : gTg) (s1 s2 : seq gTg) :
   comps G s1 -> comps G s2 -> perm_eq (mkfactors G s1) (mkfactors G s2).
 Proof.
-move=> G; elim: {G} #|G| {-2}G (leqnn #|G|) => [G | n Hi G cG].
-  by rewrite leqNgt cardG_gt0.
-move=> s1 s2 cs1 cs2; case/orP: (orbN (G :==: 1)) => [tG | ntG].
+elim: {G}#|G| {-2}G (leqnn #|G|) => [|n Hi] G cG in s1 s2 * => cs1 cs2.
+  by rewrite leqNgt cardG_gt0 in cG.
+have [G1 | ntG] := boolP (G :==: 1).
   have -> : s1 = [::] by apply/eqP; rewrite -(trivg_comps cs1).
   have -> : s2 = [::] by apply/eqP; rewrite -(trivg_comps cs2).
   by rewrite /= perm_eq_refl.
-case/orP: (orbN (simple G))=> [sG | nsG].
-  have -> : s1 = [:: 1%G ] by apply/(simple_compsP cs1).
-  have -> : s2 = [:: 1%G ] by apply/(simple_compsP cs2).
-  by rewrite /= perm_eq_refl.
+have [sG | nsG] := boolP (simple G).
+  by rewrite (simple_compsP cs1 sG) (simple_compsP cs2 sG) perm_eq_refl.
 case es1: s1 cs1 => [|N1 st1] cs1.
   by move: (trivg_comps cs1); rewrite eqxx; move/negP:ntG.
 case es2: s2 cs2 => [|N2 st2] cs2 {s1 es1}.
@@ -236,7 +205,7 @@ have iso1 : (G / N1)%G \isog (N2 / N)%G.
 have iso2 : (G / N2)%G \isog (N1 / N)%G.
   rewrite isog_sym /= -(maxnormalM maxN_1 maxN_2) // setIC.
   by rewrite weak_second_isog ?(subset_trans (normal_sub nN1G)) ?normal_norm.
-case: (exists_comps N)=> sN; case/andP=> lsN csN.
+have [sN /andP[lsN csN]] := exists_comps N.
 have i1 : perm_eq (mksrepr G N1 :: mkfactors N1 st1)
                   [:: mksrepr G N1, mksrepr N1 N & mkfactors N sN].
   rewrite perm_cons -[mksrepr _ _ :: _]/(mkfactors N1 [:: N & sN]).
@@ -271,23 +240,21 @@ End CompositionSeries.
 Section MoreGroupAction.
 
 Variables (aT rT : finGroupType).
-Variables (A : {group aT})(D : {group rT}).
+Variables (A : {group aT}) (D : {group rT}).
 Variable to : groupAction A D.
 
-
-Lemma gactsP : forall G : {set rT}, 
-  reflect {acts A, on G | to} [acts A, on G | to].
+Lemma gactsP (G : {set rT}) : reflect {acts A, on G | to} [acts A, on G | to].
 Proof.
-move=> G; apply: (iffP idP) => [nGA x|nGA]; first exact: acts_act.
+apply: (iffP idP) => [nGA x|nGA]; first exact: acts_act.
 apply/subsetP=> a Aa; rewrite !inE; rewrite Aa.
 by  apply/subsetP=> x; rewrite inE nGA.
 Qed.
 
-Lemma gactsM : forall N1 N2 : {set rT}, 
-  N1 \subset D -> N2 \subset D ->
+Lemma gactsM (N1 N2 : {set rT}) : 
+    N1 \subset D -> N2 \subset D ->
   [acts A, on N1 | to] -> [acts A, on N2 | to] -> [acts A, on N1 * N2 | to].
 Proof.
-move=> N1 N2 sN1D sN2D aAN1 aAN2; apply/gactsP=> x Ax y.
+move=> sN1D sN2D aAN1 aAN2; apply/gactsP=> x Ax y.
 apply/idP/idP; case/mulsgP=> y1 y2 N1y1 N2y2 e.
   move: (actKin to Ax y); rewrite e; move<-.
   rewrite gactM ?groupV ?(subsetP sN1D y1) ?(subsetP sN2D) //.
@@ -296,24 +263,22 @@ rewrite e gactM // ?(subsetP sN1D y1) ?(subsetP sN2D) //.
 by apply: mem_mulg; rewrite ?(gactsP _ aAN1) // ?(gactsP _ aAN2).
 Qed.
 
-Lemma gactsI : forall N1 N2 : {set rT}, 
+Lemma gactsI (N1 N2 : {set rT}) : 
   [acts A, on N1 | to] -> [acts A, on N2 | to] -> [acts A, on N1 :&: N2 | to].
 Proof.
-move=> N1 N2 aAN1 aAN2.
+move=> aAN1 aAN2.
 apply/subsetP=> x Ax; rewrite !inE Ax /=; apply/subsetP=> y Ny; rewrite inE.
 case/setIP: Ny=> N1y N2y; rewrite inE ?astabs_act  ?N1y ?N2y //.
 - by move/subsetP: aAN2; move/(_ x Ax).
 - by move/subsetP: aAN1; move/(_ x Ax).
 Qed.
   
-Lemma gastabsP : forall (S : {set rT}) (a : aT), a \in A ->
-       reflect (forall x : rT, (to x a \in S) = (x \in S)) (a \in 'N(S | to)).
+Lemma gastabsP (S : {set rT}) (a : aT) :
+  a \in A -> reflect (forall x, (to x a \in S) = (x \in S)) (a \in 'N(S | to)).
 Proof.
-move=> S a Aa; apply: (iffP idP) => [nSa x|nSa]; first exact: astabs_act.
+move=> Aa; apply: (iffP idP) => [nSa x|nSa]; first exact: astabs_act.
 by rewrite !inE Aa; apply/subsetP=> x; rewrite inE nSa.
 Qed.
-
-
 
 End MoreGroupAction.
 
@@ -327,38 +292,37 @@ Variables (aT rT : finGroupType).
 Variables (A : {group aT})(D : {group rT}).
 Variable to : groupAction A D.
 
-Lemma qact_dom_doms : forall H : {group rT},
-  H \subset D -> qact_dom to H \subset A.
+Lemma qact_dom_doms (H : {group rT}) : H \subset D -> qact_dom to H \subset A.
 Proof.
-by move=> H sHD; apply/subsetP=> x; rewrite qact_domE // inE; case/andP.
+by move=> sHD; apply/subsetP=> x; rewrite qact_domE // inE; case/andP.
 Qed.
 
-Lemma acts_qact_doms : forall H : {group rT}, H \subset D -> 
-  [acts A, on H | to] -> qact_dom to H :=: A.
+Lemma acts_qact_doms (H : {group rT}) :
+  H \subset D -> [acts A, on H | to] -> qact_dom to H :=: A.
 Proof.
-move=> H sHD aH; apply/eqP; rewrite eqEsubset; apply/andP. 
+move=> sHD aH; apply/eqP; rewrite eqEsubset; apply/andP. 
 split; first exact: qact_dom_doms.
 apply/subsetP=> x Ax; rewrite qact_domE //; apply/gastabsP=> //.
 by move/gactsP: aH; move/(_ x Ax).
 Qed.
 
-Lemma qacts_cosetpre : forall (H : {group rT})(K' : {group coset_groupType H}),
-  H \subset D -> [acts A, on H | to] -> [acts qact_dom to H, on K' | to / H] ->
-  [acts A, on (coset H @*^-1 K') | to].
+Lemma qacts_cosetpre (H : {group rT}) (K' : {group coset_of H}) :
+    H \subset D -> [acts A, on H | to] ->
+    [acts qact_dom to H, on K' | to / H] ->
+  [acts A, on coset H @*^-1 K' | to].
 Proof.
-move=> H K' sHD aH aK'.
-apply/subsetP=> x Ax; move/subsetP: aK'.
-move: (Ax); rewrite -{1}(acts_qact_doms sHD aH)=> qdx; move/(_ x qdx) => nx.
+move=> sHD aH aK'; apply/subsetP=> x Ax; move: (Ax) (subsetP aK').
+rewrite -{1}(acts_qact_doms sHD aH) => qdx; move/(_ x qdx) => nx.
 rewrite !inE Ax; apply/subsetP=> y; case/morphpreP=> Ny /= K'Hy; rewrite inE.
 apply/morphpreP; split; first by rewrite acts_qact_dom_norm.
 by move/gastabsP: nx; move/(_  qdx (coset H y)); rewrite K'Hy qactE.
 Qed.
 
-Lemma qacts_coset : forall (H K : {group rT}), 
- H \subset D -> [acts A, on K | to] -> 
- [acts qact_dom to H, on (coset H) @* K | to / H].
+Lemma qacts_coset (H K : {group rT}) : 
+    H \subset D -> [acts A, on K | to] ->
+  [acts qact_dom to H, on (coset H) @* K | to / H].
 Proof.
-move=> H K sHD  aK.
+move=> sHD aK.
 apply/subsetP=> x qdx; rewrite inE qdx inE; apply/subsetP=> y.
 case/morphimP=> z Nz Kz /= e; rewrite e inE qactE // mem_imset // inE.
 move/gactsP: aK; move/(_ x (subsetP (qact_dom_doms sHD) _ qdx) z); rewrite Kz.
@@ -377,8 +341,6 @@ Variable to : groupAction A D.
 Definition maxainv (B C : {set rT}) :=
   [max C of H | 
     [&& (H <| B), ~~ (B \subset H) & [acts A, on H | to]]].
-
-
 
 Section MaxAinvProps.
 
@@ -411,12 +373,11 @@ Qed.
 
 End MaxAinvProps.
 
-
-Lemma maxainvM : forall G H K : {group rT},
-  H \subset D -> K \subset D -> maxainv G H -> maxainv G K ->
+Lemma maxainvM (G H K : {group rT}) :
+    H \subset D -> K \subset D -> maxainv G H -> maxainv G K ->
   H :<>: K -> H * K = G.
 Proof.
-move=> G N1 N2 sN1D sN2D pmN1 pmN2 neN12.
+move: H K => N1 N2 sN1D sN2D pmN1 pmN2 neN12.
 have cN12 : commute N1 N2.
   apply: normC; apply: (subset_trans (maxainv_sub pmN1)).
   by rewrite normal_norm ?maxainv_norm.
@@ -434,15 +395,16 @@ have: N1 <*> N2 = N2 by apply: mN2; rewrite /= ?comm_joingE // nP e /= gactsM.
 by rewrite comm_joingE // => h; move: nsN21; rewrite -h mulg_subl.
 Qed.
 
-
 Definition asimple (K : {set rT}) := maxainv K 1.
 
-Lemma asimpleP : forall K : {group rT},
-  reflect (K :!=: 1 /\ (forall H : {group rT},
-    H <| K -> [acts A, on H | to] -> H :=: 1 \/ H :=: K)) 
-  (asimple K).
+Implicit Types (H K : {group rT}) (s : seq {group rT}).
+
+Lemma asimpleP K :
+  reflect [/\ K :!=: 1
+            & forall H, H <| K -> [acts A, on H | to] -> H :=: 1 \/ H :=: K]
+          (asimple K).
 Proof.
-move=> K; apply: (iffP idP).
+apply: (iffP idP).
   case/maxgroupP; rewrite normal1 /=; case/andP=> nsK1 aK H1.
   rewrite eqEsubset negb_and nsK1 /=; split => // H nHK ha.
   case eHK : (H :==: K); first by right; apply/eqP.
@@ -452,41 +414,33 @@ case=> ntK h; apply/maxgroupP; split.
   move: ntK; rewrite eqEsubset sub1G andbT normal1; move->.
   apply/subsetP=> a Da; rewrite !inE Da /= sub1set !inE.
   by rewrite /= -actmE // morph1 eqxx.
-move=> H; case/andP=> nHK; case/andP=> nsKH ha _.
-case: (h _ nHK ha)=> //; move/eqP; rewrite eqEsubset.
+move=> H /andP[nHK /andP[nsKH ha]] _.
+case: (h _ nHK ha)=> // /eqP; rewrite eqEsubset.
 by rewrite (negbTE nsKH) andbF.
 Qed.
 
-Implicit Type K : {group rT}.
-Implicit Type s : seq {group rT}.
-
-
 Definition acomps K s :=
-  ((last K s) == 1%G) && 
-  path [rel x y : {group rT} | maxainv x y] K s.
+  ((last K s) == 1%G) && path [rel x y : {group rT} | maxainv x y] K s.
 
-Lemma acompsP : forall K s, reflect
-  (last K s = 1%G /\  path [rel x y : {group rT} | maxainv x y] K s) (acomps K s).
-Proof. by move=> K s; apply: (iffP andP); case; move/eqP. Qed.
+Lemma acompsP K s :
+  reflect (last K s = 1%G /\  path [rel x y : {group rT} | maxainv x y] K s)
+          (acomps K s).
+Proof. by apply: (iffP andP); case; move/eqP. Qed.
 
-Lemma trivg_acomps : forall K s, acomps K s -> (K :==: 1) = (s == [::]).
+Lemma trivg_acomps K s : acomps K s -> (K :==: 1) = (s == [::]).
 Proof.
-move=> K s; case/andP=> ls cs; apply/eqP/eqP; last first.
+case/andP=> ls cs; apply/eqP/eqP; last first.
   by move=> se; rewrite se /= in ls; apply/eqP.
 move=> G1; case: s ls cs => // H s _ /=; case/andP; case/maxgroupP.
 by rewrite G1 sub1G andbF.
 Qed.
 
+Lemma acomps_cons K H s : acomps K (H :: s) -> acomps H s.
+Proof. by case/andP => /= ls; case/andP=> _ p; rewrite /acomps ls. Qed.
 
-Lemma acomps_cons : forall K H s, acomps K (H :: s) -> acomps H s.
+Lemma asimple_acompsP K s : acomps K s -> reflect (s = [:: 1%G]) (asimple K).
 Proof.
-by move=> K H s; case/andP => /= ls; case/andP=> _ p; rewrite /acomps ls.
-Qed.
-
-Lemma asimple_acompsP : forall K s,
-  acomps K s -> reflect (s = [:: 1%G]) (asimple K).
-Proof.
-move=> K s cs; apply: (iffP idP); last first.
+move=> cs; apply: (iffP idP); last first.
   by move=> se; move: cs; rewrite se /=; case/andP=> /=; rewrite andbT.
 case: s cs.
   by rewrite /acomps /= andbT; move/eqP->; case/asimpleP; rewrite eqxx.
@@ -498,9 +452,9 @@ rewrite (maxainv_norm mH); case/andP: (maxainv_proper mH)=> _ ->.
 exact: (maxainv_ainvar mH).
 Qed.
 
-Lemma exists_acomps : forall K : {group rT}, exists s, acomps K s.
+Lemma exists_acomps K : exists s, acomps K s.
 Proof.
-move=> K; elim: {K} #|K| {1 3}K (leqnn #|K|) => [K | n Hi K cK].
+elim: {K} #|K| {1 3}K (leqnn #|K|) => [K | n Hi K cK].
   by rewrite leqNgt cardG_gt0.
 case/orP: (orbN (asimple K)) => [sK | nsK].
   by exists [:: (1%G : {group rT})]; rewrite /acomps eqxx /= andbT.
@@ -513,27 +467,23 @@ case: (Hi _ cN)=> s; case/andP=> lasts ps; exists [:: N & s]; rewrite /acomps.
 by rewrite last_cons lasts /= pmN.
 Qed.
 
-
 End StableCompositionSeries.
-
 
 Section StrongJordanHolder.
 
-
 Section AuxiliaryLemmas.
 
-Variables (aT rT : finGroupType).
-Variables (A : {group aT})(D : {group rT}).
-Variable to : groupAction A D.
+Variables aT rT : finGroupType.
+Variables (A : {group aT}) (D : {group rT}) (to : groupAction A D).
 
-Lemma maxainv_asimple_quo : forall G H : {group rT},
+Lemma maxainv_asimple_quo (G H : {group rT}) :
    H \subset D -> maxainv to G H -> asimple (to / H) (G / H).
 Proof.
-move=> G H sHD; case/maxgroupP; case/and3P=> nHG pHG aH Hmax.
+move=> sHD /maxgroupP[/and3P[nHG pHG aH] Hmax].
 apply/asimpleP; split; first by rewrite -subG1 quotient_sub1 ?normal_norm.
 move=> K' nK'Q aK'.
-have : (K' \proper (G / H)) || (G / H == K').
-  by rewrite properE eqEsubset andbC (normal_sub nK'Q) !andbT orbC orb_negb_r.
+have: (K' \proper (G / H)) || (G / H == K').
+  by rewrite properE eqEsubset andbC (normal_sub nK'Q) !andbT orbC orbN.
 case/orP=> [ pHQ | eQH]; last by right; apply sym_eq; apply/eqP.
 left; pose K := ((coset H) @*^-1 K')%G.
 have eK'I : K' \subset (coset H) @* 'N(H).
@@ -547,18 +497,18 @@ by move: (proper_subn pHQ); rewrite sub_morphim_pre ?normal_norm.
 Qed.
 
 
-Lemma asimple_quo_maxainv : forall G H : {group rT},
-  H \subset D -> G \subset D -> [acts A, on G | to] -> [acts A, on H | to] ->
-  H <| G -> asimple (to / H) (G / H) ->
-    maxainv to G H.
+Lemma asimple_quo_maxainv (G H : {group rT}) :
+    H \subset D -> G \subset D -> [acts A, on G | to] -> [acts A, on H | to] ->
+    H <| G -> asimple (to / H) (G / H) ->
+  maxainv to G H.
 Proof.
-move=> G H sHD sGD aG aH nHG; case/asimpleP=> ntQ maxQ; apply/maxgroupP; split.
+move=> sHD sGD aG aH nHG /asimpleP[ntQ maxQ]; apply/maxgroupP; split.
   by rewrite nHG -quotient_sub1 ?normal_norm // subG1 ntQ.
-move=> K; case/and3P=> nKG nsGK aK sHK.
+move=> K /and3P[nKG nsGK aK] sHK.
 pose K' := (K / H)%G.
 have K'dQ : K' <| (G / H)%G by apply: morphim_normal.
 have nKH : H <| K by rewrite (normalS _ _ nHG) // normal_sub.
-have : K' :=: 1%G \/ K' :=: (G / H).
+have: K' :=: 1%G \/ K' :=: (G / H).
   apply: (maxQ K' K'dQ) => /=.
   apply/subsetP=> x Adx. rewrite inE Adx /= inE. apply/subsetP=> y.
   rewrite quotientE; case/morphimP=> z Nz Kz ->; rewrite /= !inE qactE //.
@@ -574,13 +524,14 @@ rewrite /= -trivg_quotient; move=> tK'; apply:(congr1 (@gval _)); move: tK'.
 by apply: (@quotient_injG _ H); rewrite ?inE /= ?normal_refl.
 Qed.
 
-Lemma asimpleI : forall N1 N2: {group rT}, 
-  N2 \subset 'N(N1) -> N1 \subset D ->
-  [acts A, on N1 | to] -> [acts A, on N2 | to] -> 
-  asimple (to / N1) (N2 / N1) -> asimple (to / (N2 :&: N1)) (N2 / (N2 :&: N1)).
+Lemma asimpleI (N1 N2 : {group rT}) : 
+    N2 \subset 'N(N1) -> N1 \subset D ->
+    [acts A, on N1 | to] -> [acts A, on N2 | to] -> 
+    asimple (to / N1) (N2 / N1) ->
+  asimple (to / (N2 :&: N1)) (N2 / (N2 :&: N1)).
 Proof.
-move=> N1 N2 nN21 sN1D aN1 aN2; case/asimpleP=> ntQ1 max1.
-case: (restrmP (coset_morphism N1) nN21) => f1 [f1e f1ker f1pre f1im].
+move=> nN21 sN1D aN1 aN2 /asimpleP[ntQ1 max1].
+have [f1 [f1e f1ker f1pre f1im]] := restrmP (coset_morphism N1) nN21.
 have hf2' : N2 \subset 'N(N2 :&: N1) by apply: normsI => //; rewrite normG.
 have hf2'' : 'ker (coset (N2 :&: N1)) \subset 'ker f1.
   by rewrite f1ker !ker_coset.
@@ -620,25 +571,21 @@ Qed.
 
 End AuxiliaryLemmas.
 
-
-
 Variables (aT rT : finGroupType).
-Variables (A : {group aT})(D : {group rT}).
-Variable to : groupAction A D.
+Variables (A : {group aT}) (D : {group rT}) (to : groupAction A D).
 
 (******************************************************************************)
 (* The factors associated to two A-stable composition series of the same      *)
 (* group are the same up to isomorphism and permutation                       *)
 (******************************************************************************)
 
-Lemma StrongJordanHolderUniqueness : 
-  forall (G : {group rT}) (s1 s2 : seq {group rT}),
-  G \subset D -> acomps to G s1 -> acomps to G s2 -> 
+Lemma StrongJordanHolderUniqueness (G : {group rT}) (s1 s2 : seq {group rT}) :
+    G \subset D -> acomps to G s1 -> acomps to G s2 -> 
   perm_eq (mkfactors G s1) (mkfactors G s2).
 Proof.
-move=> G; elim: {G} #|G| {-2}G (leqnn #|G|) => [G | n Hi G cG].
-  by rewrite leqNgt cardG_gt0.
-move=> s1 s2 hsD cs1 cs2; case/orP: (orbN (G :==: 1)) => [tG | ntG].
+elim: {G} #|G| {-2}G (leqnn #|G|) => [|n Hi] G cG in s1 s2 * => hsD cs1 cs2.
+  by rewrite leqNgt cardG_gt0 in cG.
+case/orP: (orbN (G :==: 1)) => [tG | ntG].
   have -> : s1 = [::] by apply/eqP; rewrite -(trivg_acomps cs1).
   have -> : s2 = [::] by apply/eqP; rewrite -(trivg_acomps cs2).
   by rewrite /= perm_eq_refl.

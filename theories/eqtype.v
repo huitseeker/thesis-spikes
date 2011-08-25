@@ -5,6 +5,8 @@ Require Import ssreflect ssrfun ssrbool.
 (******************************************************************************)
 (* This file defines two "base" combinatorial interfaces:                     *)
 (*    eqType == the structure for types with a decidable equality.            *)
+(*              Equality mixins can be made Canonical to allow generic        *)
+(*              folding of equality predicates.                               *)
 (* subType p == the structure for types isomorphic to {x : T | p x} with      *)
 (*              p : pred T for some type T.                                   *)
 (* The eqType interface supports the following operations:                    *)
@@ -76,7 +78,13 @@ Require Import ssreflect ssrfun ssrbool.
 (* construct to declare the Equality mixin; this pattern is repeated for all  *)
 (* the combinatorial interfaces (Choice, Countable, Finite).                  *)
 (*   More generally, the eqType structure can be transfered by (partial)      *)
-(* injections, using InjEqMixin, PcanEqMixin, or CanEqMixin.                  *)
+(* injections, using:                                                         *)
+(*   InjEqMixin injf == an Equality mixin for T, using an f : T -> eT where   *)
+(*                      eT has an eqType structure and injf : injective f.    *)
+(*    PcanEqMixin fK == an Equality mixin similarly derived from f and a left *)
+(*                      inverse partial function g and fK : pcancel f g.      *)
+(*     CanEqMixin fK == an Equality mixin similarly derived from f and a left *)
+(*                      inverse function g and fK : cancel f g.               *)
 (*   We add the following to the standard suffixes documented in ssrbool.v:   *)
 (*  1, 2, 3, 4 -- explicit enumeration predicate for 1 (singleton), 2, 3, or  *)
 (*                4 values.                                                   *)
@@ -123,11 +131,11 @@ Export Equality.Exports.
 
 Definition eq_op T := Equality.op (Equality.class T).
 
-Lemma eqE : forall T x, eq_op x = Equality.op (Equality.class T) x.
+Lemma eqE T x : eq_op x = Equality.op (Equality.class T) x.
 Proof. by []. Qed.
 
-Lemma eqP : forall T, Equality.axiom (@eq_op T).
-Proof. by rewrite /eq_op; case=> ? []. Qed.
+Lemma eqP T : Equality.axiom (@eq_op T).
+Proof. by case: T => ? []. Qed.
 Implicit Arguments eqP [T x y].
 
 Delimit Scope eq_scope with EQ.
@@ -148,12 +156,11 @@ Notation "x =P y :> T" := (eqP : reflect (x = y :> T) (x == y :> T))
 
 Prenex Implicits eq_op eqP.
 
-Lemma eq_refl : forall (T : eqType) (x : T), x == x.
-Proof. by move=> T x; apply/eqP. Qed.
+Lemma eq_refl (T : eqType) (x : T) : x == x. Proof. exact/eqP. Qed.
 Notation eqxx := eq_refl.
 
-Lemma eq_sym : forall (T : eqType) (x y : T), (x == y) = (y == x).
-Proof. by move=> T x y; apply/eqP/eqP. Qed.
+Lemma eq_sym (T : eqType) (x y : T) : (x == y) = (y == x).
+Proof. exact/eqP/eqP. Qed.
 
 Hint Resolve eq_refl eq_sym.
 
@@ -175,17 +182,17 @@ Proof. by move=> imp; apply: contraNN; move/eqP. Qed.
 
 End Contrapositives.
 
-Theorem eq_irrelevance : forall (T : eqType) (x y : T) (e1 e2 : x = y), e1 = e2.
+Theorem eq_irrelevance (T : eqType) x y : forall e1 e2 : x = y :> T, e1 = e2.
 Proof.
-move=> T x y; pose proj z e := if x =P z is ReflectT e0 then e0 else e.
+pose proj z e := if x =P z is ReflectT e0 then e0 else e.
 suff: injective (proj y) by rewrite /proj => injp e e'; apply: injp; case: eqP.
 pose join (e : x = _) := etrans (esym e).
-apply: can_inj (join x y (proj x (erefl x))) _ => e.
-by case: y / e; move: {-1}x (proj x _) => y; case: y /.
+apply: can_inj (join x y (proj x (erefl x))) _.
+by case: y /; case: _ / (proj x _).
 Qed.
 
-Corollary eq_axiomK : forall (T : eqType) (x : T), all_equal_to (erefl x).
-Proof. move=> T x eq_x_x; exact: eq_irrelevance. Qed.
+Corollary eq_axiomK (T : eqType) (x : T) : all_equal_to (erefl x).
+Proof. move=> eq_x_x; exact: eq_irrelevance. Qed.
 
 (* We use the module system to circumvent a silly limitation that  *)
 (* forbids using the same constant to coerce to different targets. *)
@@ -201,29 +208,32 @@ Lemma unit_eqP : Equality.axiom (fun _ _ : unit => true).
 Proof. by do 2!case; left. Qed.
 
 Definition unit_eqMixin := EqMixin unit_eqP.
-Canonical Structure unit_eqType := Eval hnf in EqType unit unit_eqMixin.
+Canonical unit_eqType := Eval hnf in EqType unit unit_eqMixin.
 
 (* Comparison for booleans. *)
 
+(* This is extensionally equal, but not convertible to Bool.eqb. *)
+Definition eqb b := addb (~~ b).
+
 Lemma eqbP : Equality.axiom eqb.
-Proof. by do 2 case; constructor. Qed.
+Proof. by do 2!case; constructor. Qed.
 
-Canonical Structure bool_eqMixin := EqMixin eqbP.
-Canonical Structure bool_eqType := Eval hnf in EqType bool bool_eqMixin.
+Canonical bool_eqMixin := EqMixin eqbP.
+Canonical bool_eqType := Eval hnf in EqType bool bool_eqMixin.
 
-Lemma eqbE : eqb = eq_op. Proof. done. Qed.
+Lemma eqbE : eqb = eq_op. Proof. by []. Qed.
 
-Lemma bool_irrelevance : forall (x y : bool) (E E' : x = y), E = E'.
+Lemma bool_irrelevance (x y : bool) (E E' : x = y) : E = E'.
 Proof. exact: eq_irrelevance. Qed.
 
-Lemma negb_add : forall b1 b2, ~~ (b1 (+) b2) = (b1 == b2).
-Proof. by do 2!case. Qed.
+Lemma negb_add b1 b2 : ~~ (b1 (+) b2) = (b1 == b2).
+Proof. by rewrite -addNb. Qed.
 
-Lemma negb_eqb : forall b1 b2, (b1 != b2) = b1 (+) b2.
-Proof. by do 2!case. Qed.
+Lemma negb_eqb b1 b2 : (b1 != b2) = b1 (+) b2.
+Proof. by rewrite -addNb negbK. Qed.
 
-Lemma eqb_id : forall b, (b == true) = b.
-Proof. by case. Qed.
+Lemma eqb_id b : (b == true) = b.
+Proof. by case: b. Qed.
 
 (* Equality-based predicates.       *)
 
@@ -231,7 +241,7 @@ Notation xpred1 := (fun a1 x => x == a1).
 Notation xpred2 := (fun a1 a2 x => (x == a1) || (x == a2)).
 Notation xpred3 := (fun a1 a2 a3 x => [|| x == a1, x == a2 | x == a3]).
 Notation xpred4 :=
-   (fun a1 a2 a3 a4 x => [|| x == a1, x == a2, x == a3 | x == a4]).
+  (fun a1 a2 a3 a4 x => [|| x == a1, x == a2, x == a3 | x == a4]).
 Notation xpredU1 := (fun a1 (p : pred _) x => (x == a1) || p x).
 Notation xpredC1 := (fun a1 x => x != a1).
 Notation xpredD1 := (fun (p : pred _) a1 x => (x != a1) && p x).
@@ -256,10 +266,10 @@ Lemma predU1P : reflect (x = y \/ b) ((x == y) || b).
 Proof. apply: (iffP orP) => [] []; by [right | move/eqP; left]. Qed.
 
 Lemma pred2P : reflect (x = y \/ z = u) ((x == y) || (z == u)).
-Proof. by apply: (iffP orP) => [] []; move/eqP; by [left | right]. Qed.
+Proof. by apply: (iffP orP) => [] [] /eqP; by [left | right]. Qed.
 
 Lemma predD1P : reflect (x <> y /\ b) ((x != y) && b).
-Proof. by apply: (iffP andP)=> [] [] //; move/eqP. Qed.
+Proof. by apply: (iffP andP)=> [] [] // /eqP. Qed.
 
 Lemma predU1l : x = y -> (x == y) || b.
 Proof. by move->; rewrite eqxx. Qed.
@@ -314,12 +324,15 @@ End Exo.
 
 Section Endo.
 
-Variables (T : eqType) (f : T -> T).
+Variable T : eqType.
 
-Definition frel := [rel x y : T | f x == y].
+Definition frel f := [rel x y : T | f x == y].
 
-Lemma inv_eq : involutive f -> forall x y, (f x == y) = (x == f y).
+Lemma inv_eq f : involutive f -> forall x y : T, (f x == y) = (x == f y).
 Proof. by move=> fK; exact: can2_eq. Qed.
+
+Lemma eq_frel f f' : f =1 f' -> frel f =2 frel f'.
+Proof. by move=> eq_f x y; rewrite /= eq_f. Qed.
 
 End Endo.
 
@@ -342,6 +355,9 @@ Proof. move=> inj_h x; exact: (inj_eq inj_h). Qed.
 End EqFun.
 
 Prenex Implicits frel.
+
+(* The coercion to rel must be explicit for derived Notations to unparse. *)
+Notation coerced_frel f := (rel_of_simpl_rel (frel f)) (only parsing).
 
 Section FunWith.
 
@@ -394,10 +410,10 @@ Definition comparable := forall x y : T, {x = y} + {x <> y}.
 
 Hypothesis Hcompare : forall x y : T, {x = y} + {x <> y}.
 
-Definition compareb x y := if Hcompare x y is left _ then true else false.
+Definition compareb x y : bool := Hcompare x y.
 
 Lemma compareP : Equality.axiom compareb.
-Proof. by move=> x y; rewrite /compareb; case (Hcompare x y); constructor. Qed.
+Proof. by move=> x y; exact: sumboolP. Qed.
 
 Definition comparableClass := EqMixin compareP.
 
@@ -429,11 +445,11 @@ Variable sT : subType.
 
 CoInductive Sub_spec : sT -> Type := SubSpec x Px : Sub_spec (Sub x Px).
 
-Lemma SubP : forall u, Sub_spec u.
-Proof. by case: sT Sub_spec SubSpec => T' _ C rec /= _. Qed.
+Lemma SubP u : Sub_spec u.
+Proof. by case: sT Sub_spec SubSpec u => T' _ C rec /= _. Qed.
 
-Lemma SubK : forall x Px, @val sT (Sub x Px) = x.
-Proof. by case sT. Qed.
+Lemma SubK x Px : @val sT (Sub x Px) = x.
+Proof. by case: sT. Qed.
 
 Definition insub x :=
   if @idP (P x) is ReflectT Px then @Some sT (Sub x Px) else None.
@@ -444,33 +460,32 @@ CoInductive insub_spec x : option sT -> Type :=
   | InsubSome u of P x & val u = x : insub_spec x (Some u)
   | InsubNone   of ~~ P x          : insub_spec x None.
 
-Lemma insubP : forall x, insub_spec x (insub x).
+Lemma insubP x : insub_spec x (insub x).
 Proof.
-rewrite/insub => x; move: {2}(P x) idP => b.
-by case: b /; [left; rewrite ?SubK | right; exact/negP].
+by rewrite /insub; case: {-}_ / idP; [left; rewrite ?SubK | right; exact/negP].
 Qed.
 
-Lemma insubT : forall x Px, insub x = Some (Sub x Px).
+Lemma insubT x Px : insub x = Some (Sub x Px).
 Proof.
-move=> x Px; case: insubP; last by case/negP.
+case: insubP; last by case/negP.
 case/SubP=> y Py _ def_x; rewrite -def_x SubK in Px *.
 congr (Some (Sub _ _)); exact: bool_irrelevance.
 Qed.
 
-Lemma insubF : forall x, P x = false -> insub x = None.
-Proof. by move=> x nPx; case: insubP => // u; rewrite nPx. Qed.
+Lemma insubF x : P x = false -> insub x = None.
+Proof. by move/idP; case: insubP. Qed.
 
-Lemma insubN : forall x, ~~ P x -> insub x = None.
-Proof. by move=> x; move/negPf; exact: insubF. Qed.
+Lemma insubN x : ~~ P x -> insub x = None.
+Proof. by move/negPf/insubF. Qed.
 
 Lemma isSome_insub : ([eta insub] : pred T) =1 P.
-Proof. by apply: fsym => x; case: insubP => //; move/negPf. Qed.
+Proof. by apply: fsym => x; case: insubP => // /negPf. Qed.
 
 Lemma insubK : ocancel insub (@val _).
 Proof. by move=> x; case: insubP. Qed.
 
-Lemma valP : forall u : sT, P (val u).
-Proof. by case/SubP=> x Px; rewrite SubK. Qed.
+Lemma valP (u : sT) : P (val u).
+Proof. by case/SubP: u => x Px; rewrite SubK. Qed.
 
 Lemma valK : pcancel (@val _) insub.
 Proof. case/SubP=> x Px; rewrite SubK; exact: insubT. Qed.
@@ -478,16 +493,14 @@ Proof. case/SubP=> x Px; rewrite SubK; exact: insubT. Qed.
 Lemma val_inj : injective (@val sT).
 Proof. exact: pcan_inj valK. Qed.
 
-Lemma valKd : forall u0, cancel (@val _) (insubd u0).
-Proof. by move=> u0 u; rewrite /insubd valK. Qed.
+Lemma valKd u0 : cancel (@val _) (insubd u0).
+Proof. by move=> u; rewrite /insubd valK. Qed.
 
-Lemma val_insubd : forall u0 x, val (insubd u0 x) = if P x then x else val u0.
-Proof.
-by rewrite /insubd => u0 x; case: insubP => [u -> // | ]; move/negPf->.
-Qed.
+Lemma val_insubd u0 x : val (insubd u0 x) = if P x then x else val u0.
+Proof. by rewrite /insubd; case: insubP => [u -> | /negPf->]. Qed.
 
-Lemma insubdK : forall u0, {in P, cancel (insubd u0) (@val _)}.
-Proof. by move=> u0 x Px; rewrite val_insubd [P x]Px. Qed.
+Lemma insubdK u0 : {in P, cancel (insubd u0) (@val _)}.
+Proof. by move=> x Px; rewrite /= val_insubd [P x]Px. Qed.
 
 Definition insub_eq x :=
   let Some_sub Px := Some (Sub x Px : sT) in
@@ -496,9 +509,8 @@ Definition insub_eq x :=
 
 Lemma insub_eqE : insub_eq =1 insub.
 Proof.
-rewrite /insub_eq /insub => x.
-move: {2 4 5}(P x) idP (erefl _) => b; case: b / => // Px Px'.
-by congr Some; apply: val_inj; rewrite !SubK.
+rewrite /insub_eq /insub => x; case: {2 3}_ / idP (erefl _) => // Px Px'.
+by congr (Some _); apply: val_inj; rewrite !SubK.
 Qed.
 
 End SubType.
@@ -536,8 +548,8 @@ Definition innew T nT x := @Sub T predT nT x (erefl true).
 Implicit Arguments innew [T nT].
 Prenex Implicits innew.
 
-Lemma innew_val : forall T nT, cancel val (@innew T nT).
-Proof. by move=> T nT u; apply: val_inj; exact: SubK. Qed.
+Lemma innew_val T nT : cancel val (@innew T nT).
+Proof. by move=> u; apply: val_inj; exact: SubK. Qed.
 
 (* Prenex Implicits and renaming. *)
 Notation sval := (@proj1_sig _ _).
@@ -551,15 +563,15 @@ Lemma svalP : forall u : sig P, P (sval u). Proof. by case. Qed.
 
 Definition s2val (u : sig2 P Q) := let: exist2 x _ _ := u in x.
 
-Lemma s2valP : forall u, P (s2val u). Proof. by case. Qed.
+Lemma s2valP u : P (s2val u). Proof. by case: u. Qed.
 
-Lemma s2valP' : forall u, Q (s2val u). Proof. by case. Qed.
+Lemma s2valP' u : Q (s2val u). Proof. by case: u. Qed.
 
 End SigProj.
 
 Prenex Implicits svalP s2val s2valP s2valP'.
 
-Canonical Structure sig_subType T (P : pred T) : subType [eta P] :=
+Canonical sig_subType T (P : pred T) : subType [eta P] :=
   Eval hnf in [subType for @sval T [eta [eta P]] by @sig_rect _ _].
 
 (* Shorthand for the return type of insub. *)
@@ -607,7 +619,7 @@ Notation Local ev_ax := (fun T v => @Equality.axiom T (fun x y => v x == v y)).
 Lemma val_eqP : ev_ax sT val. Proof. exact: inj_eqAxiom val_inj. Qed.
 
 Definition sub_eqMixin := EqMixin val_eqP.
-Canonical Structure sub_eqType := Eval hnf in EqType sT sub_eqMixin.
+Canonical sub_eqType := Eval hnf in EqType sT sub_eqMixin.
 
 Definition SubEqMixin :=
   (let: SubType _ v _ _ _ as sT' := sT
@@ -615,7 +627,7 @@ Definition SubEqMixin :=
    fun vP : ev_ax _ v => EqMixin vP
    ) val_eqP.
 
-Lemma val_eqE : forall u v : sT, (val u == val v) = (u == v).
+Lemma val_eqE (u v : sT) : (val u == val v) = (u == v).
 Proof. by []. Qed.
 
 End SubEqType.
@@ -631,7 +643,7 @@ Section SigEqType.
 Variables (T : eqType) (P : pred T).
 
 Definition sig_eqMixin := Eval hnf in [eqMixin of {x | P x} by <:].
-Canonical Structure sig_eqType := Eval hnf in EqType {x | P x} sig_eqMixin.
+Canonical sig_eqType := Eval hnf in EqType {x | P x} sig_eqMixin.
 
 End SigEqType.
 
@@ -648,19 +660,19 @@ by do 2!move/eqP->.
 Qed.
 
 Definition prod_eqMixin := EqMixin pair_eqP.
-Canonical Structure prod_eqType := Eval hnf in EqType (T1 * T2) prod_eqMixin.
+Canonical prod_eqType := Eval hnf in EqType (T1 * T2) prod_eqMixin.
 
 Lemma pair_eqE : pair_eq = eq_op :> rel _. Proof. by []. Qed.
 
-Lemma xpair_eqE : forall (x1 y1 : T1) (x2 y2 : T2),
+Lemma xpair_eqE (x1 y1 : T1) (x2 y2 : T2) :
   ((x1, x2) == (y1, y2)) = ((x1 == y1) && (x2 == y2)).
 Proof. by []. Qed.
 
-Lemma pair_eq1 : forall u v : T1 * T2, u == v -> u.1 == v.1.
-Proof. by move=> [x1 x2] [y1 y2]; case/andP. Qed.
+Lemma pair_eq1 (u v : T1 * T2) : u == v -> u.1 == v.1.
+Proof. by case/andP. Qed.
 
-Lemma pair_eq2 : forall u v : T1 * T2, u == v -> u.2 == v.2.
-Proof. by move=> [x1 x2] [y1 y2]; case/andP. Qed.
+Lemma pair_eq2 (u v : T1 * T2) : u == v -> u.2 == v.2.
+Proof. by case/andP. Qed.
 
 End ProdEqType.
 
@@ -686,9 +698,8 @@ Proof.
 case=> [x|] [y|] /=; by [constructor | apply: (iffP eqP) => [|[]] ->].
 Qed.
 
-Canonical Structure option_eqMixin := EqMixin opt_eqP.
-Canonical Structure option_eqType :=
-  Eval hnf in EqType (option T) option_eqMixin.
+Canonical option_eqMixin := EqMixin opt_eqP.
+Canonical option_eqType := Eval hnf in EqType (option T) option_eqMixin.
 
 End OptionEqType.
 
@@ -708,10 +719,9 @@ Definition tagged_as u v :=
     eq_rect_r T_ (tagged v) eq_uv
   else tagged u.
 
-Lemma tagged_asE : forall u x, tagged_as u (Tagged T_ x) = x.
+Lemma tagged_asE u x : tagged_as u (Tagged T_ x) = x.
 Proof.
-rewrite /tagged_as => u y /=; case: eqP => // eq_uu.
-by rewrite [eq_uu]eq_axiomK.
+by rewrite /tagged_as /=; case: eqP => // eq_uu; rewrite [eq_uu]eq_axiomK.
 Qed.
 
 End TaggedAs.
@@ -730,16 +740,16 @@ case: eqP => [<-|Hij] y; last by right; case.
 by apply: (iffP eqP) => [->|<-]; rewrite tagged_asE.
 Qed.
 
-Canonical Structure tag_eqMixin := EqMixin tag_eqP.
-Canonical Structure tag_eqType := Eval hnf in EqType {i : I & T_ i} tag_eqMixin.
+Canonical tag_eqMixin := EqMixin tag_eqP.
+Canonical tag_eqType := Eval hnf in EqType {i : I & T_ i} tag_eqMixin.
 
 Lemma tag_eqE : tag_eq = eq_op. Proof. by []. Qed.
 
-Lemma eq_tag : forall u v, u == v -> tag u = tag v.
-Proof. by move=> u v; move/eqP->. Qed.
+Lemma eq_tag u v : u == v -> tag u = tag v.
+Proof. by move/eqP->. Qed.
 
-Lemma eq_Tagged : forall u x, (u == Tagged _ x) = (tagged u == x).
-Proof. by move=> u x; rewrite -tag_eqE /tag_eq eqxx tagged_asE. Qed.
+Lemma eq_Tagged u x :(u == Tagged _ x) = (tagged u == x).
+Proof. by rewrite -tag_eqE /tag_eq eqxx tagged_asE. Qed.
 
 End TagEqType.
 
@@ -760,8 +770,8 @@ Definition sum_eq u v :=
 Lemma sum_eqP : Equality.axiom sum_eq.
 Proof. case=> x [] y /=; by [right | apply: (iffP eqP) => [->|[->]]]. Qed.
 
-Canonical Structure sum_eqMixin := EqMixin sum_eqP.
-Canonical Structure sum_eqType := Eval hnf in EqType (T1 + T2) sum_eqMixin.
+Canonical sum_eqMixin := EqMixin sum_eqP.
+Canonical sum_eqType := Eval hnf in EqType (T1 + T2) sum_eqMixin.
 
 Lemma sum_eqE : sum_eq = eq_op. Proof. by []. Qed.
 

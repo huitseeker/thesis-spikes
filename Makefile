@@ -6,7 +6,7 @@ MAKEFLAGS := -r #-j2
 
 .PHONY: clean all tags install test
 
-VERSION := $(shell grep 'let ssrversion' src/ssreflect.ml | cut -d \" -f 2)
+VERSION := $(shell grep 'let ssrversion' src/ssreflect.ml4 | cut -d \" -f 2)
 COQMAKEFILE := Makefile.coq
 COQMAKE := +$(MAKE) -f $(COQMAKEFILE)
 

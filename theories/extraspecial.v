@@ -63,7 +63,7 @@ Proof.
 apply: is_total_action=> [] [i j] => [|k1 k2] /=; first by rewrite mul0r addr0.
 by rewrite mulr_addl addrA.
 Qed.
-Canonical Structure action := Action actP.
+Canonical action := Action actP.
 
 Lemma gactP : is_groupAction [set: 'Z_p * 'Z_p] action.
 Proof.
@@ -72,7 +72,7 @@ apply/andP; split; first by apply/subsetP=> ij _; rewrite inE.
 apply/morphicP=> /= [[i1 j1] [i2 j2] _ _].
 by rewrite !permE /= mulr_addr -addrA (addrCA i2) (addrA i1).
 Qed.
-Canonical Structure groupAction := GroupAction gactP.
+Definition groupAction := GroupAction gactP.
 
 Definition gtype := locked (sdprod_groupType groupAction).
 
@@ -128,13 +128,13 @@ unlock gtype; apply: intro_isoGrp => [|rT H].
     rewrite -morphV -?morphM ?inE //=; congr (sdpair1 _ (_, _)) => /=.
       by rewrite mulr1 mulKg.
     by rewrite mulVg.
-  have def_xi: forall i, x ^+ i = sdpair1 _ (0, i%:R)%R.
-    move=> i; rewrite -morphX ?inE //; congr (sdpair1 _ _).
+  have def_xi i: x ^+ i = sdpair1 _ (0, i%:R)%R.
+    rewrite -morphX ?inE //; congr (sdpair1 _ _).
     by apply/eqP; rewrite /eq_op /= !morphX ?inE ?exp1gn //=.
-  have def_yi: forall i, y ^+ i = sdpair2 _ i%:R.
-    by move=> i; rewrite -morphX ?inE //.
-  have def_zi: forall i, z ^+ i = sdpair1 _ (i%:R, 0)%R.
-    move=> i; rewrite def_z -morphX ?inE //; congr (sdpair1 _ _).
+  have def_yi i: y ^+ i = sdpair2 _ i%:R.
+    by rewrite -morphX ?inE //.
+  have def_zi i: z ^+ i = sdpair1 _ (i%:R, 0)%R.
+    rewrite def_z -morphX ?inE //; congr (sdpair1 _ _).
     by apply/eqP; rewrite /eq_op /= !morphX ?inE ?exp1gn ?andbT //=.
   rewrite def_xi def_yi char_Zp ?morph1 //.
   rewrite def_z -morphR ?inE // !commgEl -sdpair_act ?inE //= mulr0 addr0.
@@ -142,15 +142,15 @@ unlock gtype; apply: intro_isoGrp => [|rT H].
   have Gx: x \in G by rewrite -cycle_subG joing_subl.
   have Gy: y \in G by rewrite -cycle_subG joing_subr.
   rewrite eqEsubset subsetT -im_sdpair mulG_subG /= -/G; apply/andP; split.
-    apply/subsetP=> u; case/morphimP=> [[i j] _ _ def_u].
+    apply/subsetP=> u /morphimP[[i j] _ _ def_u].
     suffices ->: u = z ^+ i * x ^+ j by rewrite groupMl groupX ?groupR.
     rewrite def_zi def_xi !natr_Zp -morphM ?inE // def_u.
     by congr (sdpair1 _ (_, _)); rewrite ?mulg1 ?mul1g.
-  apply/subsetP=> v; case/morphimP=> k _ _ def_v.
+  apply/subsetP=> v /morphimP[k _ _ def_v].
   suffices ->: v = y ^+ k by rewrite groupX.
   by rewrite def_yi natr_Zp.
-case/existsP=> [[x y] /=]; set z := [~ x, y]; case/eqP=> defH xp yp.
-move/eqP; move/commgP => czx; move/eqP; move/commgP => czy.
+case/existsP=> [[x y] /=]; set z := [~ x, y].
+case/eqP=> defH xp yp /eqP/commgP czx /eqP/commgP czy.
 have zp: z ^+ p = 1 by rewrite -commXg // xp comm1g.
 pose f1 (ij : 'Z_p * 'Z_p) := let: (i, j) := ij in z ^+ i * x ^+ j.
 have f1M: {in setT &, {morph f1 : u v / u * v}}.
@@ -170,9 +170,9 @@ apply/eqP; rewrite eqEsubset -{2}defH -genM_join gen_subG /= im_xsdprodm.
 have Hx: x \in H by rewrite -cycle_subG -defH joing_subl.
 have Hy: y \in H by rewrite -cycle_subG -defH joing_subr.
 rewrite mulG_subG -andbA; apply/and3P; split.
-- apply/subsetP=> u; case/morphimP=> [/= [i j] _ _ -> /=].
+- apply/subsetP=> _ /morphimP[[i j] _ _ -> /=].
   by rewrite groupMl groupX ?groupR.
-- by apply/subsetP=> v; case/morphimP=> /= k _ _ ->; rewrite groupX.
+- by apply/subsetP=> _ /morphimP[k _ _ ->]; rewrite groupX.
 rewrite mulgSS ?cycle_subG //= morphimEdom; apply/imsetP.
   by exists (0, 1)%R; rewrite ?inE //= mul1g.
 by exists 1%R; rewrite ?inE.
@@ -209,10 +209,10 @@ by have [[_ ->] _ ] := pX1p2_extraspecial.
 Qed.
 
 (* This is the uniqueness half of Aschbacher ex. (8.7)(1) *)
-Lemma isog_pX1p2 : forall (gT : finGroupType) (G : {group gT}),
+Lemma isog_pX1p2 (gT : finGroupType) (G : {group gT}) :
   extraspecial G -> exponent G %| p -> #|G| = (p ^ 3)%N -> G \isog p^{1+2}.
 Proof.
-move=> gT G esG expGp oG; apply/(isoGrpP _ Grp_pX1p2).
+move=> esG expGp oG; apply/(isoGrpP _ Grp_pX1p2).
 rewrite card_pX1p2; split=> //.
 have pG: p.-group G by rewrite /pgroup oG pnat_exp pnat_id.
 have oZ := card_center_extraspecial pG esG.
@@ -250,8 +250,8 @@ rewrite TI_cardMg ?oZx -?orderE ?(nt_prime_order p_pr) ?expGz ?mem_quotient //.
   rewrite -cent_cycle (subsetP _ y (coset_idr _ Zy)) ?(subsetP nZG) //.
   by rewrite subIset ?centS ?orbT ?cycle_subG.
 rewrite prime_TIg ?oZx // cycle_subG; apply: contra not_cxy.
-case/cycleP=> i; rewrite -morphX ?(subsetP nZG) //; move/rcoset_kercosetP.
-rewrite groupX ?(subsetP nZG) // cent1C; move/(_ isT isT); apply: subsetP.
+case/cycleP=> i; rewrite -morphX ?(subsetP nZG) // => /rcoset_kercosetP.
+rewrite groupX ?(subsetP nZG) // cent1C => /(_ isT isT); apply: subsetP.
 rewrite mul_subG ?sub1set ?groupX ?cent1id //= -cent_cycle subIset // orbC.
 by rewrite centS ?cycle_subG.
 Qed.
@@ -265,12 +265,12 @@ Variable p : nat.
 Lemma pX1p2id : p^{1+2*1} \isog p^{1+2}.
 Proof. exact: ncprod1. Qed.
 
-Lemma pX1p2S : forall n, xcprod_spec p^{1+2} p^{1+2*n} p^{1+2*n.+1}%type.
+Lemma pX1p2S n : xcprod_spec p^{1+2} p^{1+2*n} p^{1+2*n.+1}%type.
 Proof. exact: ncprodS. Qed.
 
-Lemma card_pX1p2n : forall n, prime p -> #|p^{1+2*n}| = (p ^ n.*2.+1)%N.
+Lemma card_pX1p2n n : prime p -> #|p^{1+2*n}| = (p ^ n.*2.+1)%N.
 Proof.
-move=> n p_pr; have pG := pX1p2_pgroup p_pr.
+move=> p_pr; have pG := pX1p2_pgroup p_pr.
 have oG := card_pX1p2 p_pr; have esG := pX1p2_extraspecial p_pr.
 have oZ := card_center_extraspecial pG esG.
 elim: n => [|n IHn]; first by rewrite (card_isog (ncprod0 _)) oZ.
@@ -279,13 +279,13 @@ rewrite -injm_center ?{1}card_injm ?injm_cpairg1 ?injm_cpair1g ?center_sub //.
 by rewrite oG oZ IHn -expn_add mulKn ?prime_gt0.
 Qed.
 
-Lemma pX1p2n_pgroup : forall n, prime p -> p.-group p^{1+2*n}.
-Proof. by move=> n p_pr; rewrite /pgroup card_pX1p2n // pnat_exp pnat_id. Qed.
+Lemma pX1p2n_pgroup n : prime p -> p.-group p^{1+2*n}.
+Proof. by move=> p_pr; rewrite /pgroup card_pX1p2n // pnat_exp pnat_id. Qed.
 
 (* This is part of the existence half of Aschbacher (23.13) *)
-Lemma exponent_pX1p2n : forall n, prime p -> odd p -> exponent p^{1+2*n} = p.
+Lemma exponent_pX1p2n n : prime p -> odd p -> exponent p^{1+2*n} = p.
 Proof.
-move=> n p_pr odd_p; apply: prime_nt_dvdP => //.
+move=> p_pr odd_p; apply: prime_nt_dvdP => //.
   rewrite -dvdn1 -trivg_exponent -cardG_gt1 card_pX1p2n //.
   by rewrite (ltn_exp2l 0) // prime_gt1.
 elim: n => [|n IHn].
@@ -298,10 +298,9 @@ by rewrite (exponentP _ x C1x) ?exponent_injm ?injm_cpairg1 // exponent_pX1p2.
 Qed.
 
 (* This is part of the existence half of Aschbacher (23.13) and (23.14) *)
-Lemma pX1p2n_extraspecial : forall n,
-  prime p -> n > 0 -> extraspecial p^{1+2*n}.
+Lemma pX1p2n_extraspecial n : prime p -> n > 0 -> extraspecial p^{1+2*n}.
 Proof.
-move=> n p_pr; elim: n => [//|n IHn _].
+move=> p_pr; elim: n => [//|n IHn _].
 have esG := pX1p2_extraspecial p_pr.
 have [n0 | n_gt0] := posnP n.
   by apply: isog_extraspecial esG; rewrite isog_sym n0 pX1p2id.
@@ -312,7 +311,7 @@ by apply: injm_extraspecial (IHn n_gt0); rewrite ?injm_cpair1g.
 Qed.
 
 (* This is Aschbacher (23.12) *)
-Lemma Ohm1_extraspecial_odd : forall (gT : finGroupType) (G : {group gT}),
+Lemma Ohm1_extraspecial_odd (gT : finGroupType) (G : {group gT}) :
     p.-group G -> extraspecial G -> odd #|G| ->
  let Y := 'Ohm_1(G) in
   [/\ exponent Y = p, #|G : Y| %| p
@@ -323,7 +322,7 @@ Lemma Ohm1_extraspecial_odd : forall (gT : finGroupType) (G : {group gT}),
           & exists M : {group gT},
              [/\ M \isog 'Mod_(p ^ 3), M \* E = G & M :&: E = 'Z(M)]]].
 Proof.
-move=> gT G pG esG oddG Y; have [spG _] := esG.
+move=> pG esG oddG Y; have [spG _] := esG.
 have [defPhiG defG'] := spG; set Z := 'Z(G) in defPhiG defG'.
 have{spG} expG: exponent G %| p ^ 2 by exact: exponent_special.
 have p_pr := extraspecial_prime pG esG.
@@ -343,15 +342,15 @@ have sG1Z: 'Mho^1(G) \subset Z by rewrite -defPhiG (Phi_joing pG) joing_subr.
 have Z_Gp: {in G, forall x, x ^+ p \in Z}.
   by move=> x Gx; rewrite /= (subsetP sG1Z) ?(Mho_p_elt 1) ?(mem_p_elt pG).
 have{expG} oY': {in G :\: Y, forall u, #[u] = (p ^ 2)%N}.
-  move=> u; case/setDP=> Gu notYu; apply/eqP.
+  move=> u /setDP[Gu notYu]; apply/eqP.
   have [k ou] := p_natP (mem_p_elt pG Gu).
   rewrite eqn_dvd order_dvdn (exponentP expG) // eqxx ou dvdn_Pexp2l // ltnNge.
   apply: contra notYu => k_le_1; rewrite [Y](OhmE _ pG) mem_gen // !inE Gu /=.
   by rewrite -order_dvdn ou dvdn_exp2l.
-have isoMod3: forall M : {group gT},
+have isoMod3 (M : {group gT}):
     M \subset G -> ~~ abelian M -> ~~ (M \subset Y) -> #|M| = (p ^ 3)%N ->
   M \isog 'Mod_(p ^ 3).
-- move=> M sMG not_cMM; case/subsetPn=> u Mu notYu oM.
+- move=> sMG not_cMM /subsetPn[u Mu notYu oM].
   have pM := pgroupS sMG pG; have sUM: <[u]> \subset M by rewrite cycle_subG.
   have Y'u: u \in G :\: Y by rewrite inE notYu (subsetP sMG).
   have iUM: #|M : <[u]>| = p by rewrite -divgS // oM expnS -(oY' u) ?mulnK.
@@ -363,7 +362,7 @@ have iYG: #|G : Y| = p.
   have [V maxV sYV]: {V : {group gT} | maximal V G & Y \subset V}.
     by apply: maxgroup_exists; rewrite properEneq neYG.
   have [sVG [u Gu notVu]] := properP (maxgroupp maxV).
-  wlog [v Vv notYv]: / exists2 v, v \in V & v \notin Y.
+  without loss [v Vv notYv]: / exists2 v, v \in V & v \notin Y.
     have [->| ] := eqVneq Y V; first by rewrite (p_maximal_index pG).
     by rewrite eqEsubset sYV => not_sVY; apply; exact/subsetPn.
   pose U := <[u]> <*> <[v]>; have Gv := subsetP sVG v Vv.
@@ -403,10 +402,10 @@ have iYG: #|G : Y| = p.
   case/modular_group_structure: genU => // _ _ _ _.
   case: eqP (p_odd) => [[-> //] | _ _]; case/(_ 1%N)=> // _ oU1.
   by rewrite -divgS // oU oU1 mulnK // muln_gt0 p_gt0.
-have iC1U: forall (U : {group gT}) x,
+have iC1U (U : {group gT}) x:
   U \subset G -> x \in G :\: 'C(U) -> #|U : 'C_U[x]| = p.
-- move=> U x sUG; case/setDP=> Gx not_cUx; apply/prime_nt_dvdP=> //.
-    apply: contra not_cUx; rewrite -sub_cent1; move/eqP=> sUCx.
+- move=> sUG /setDP[Gx not_cUx]; apply/prime_nt_dvdP=> //.
+    apply: contra not_cUx; rewrite -sub_cent1 => /eqP sUCx.
     by rewrite -(index1g _ sUCx) ?subsetIl ?subsetIr.
   rewrite -(@dvdn_pmul2l (#|U| * #|'C_G[x]|)) ?muln_gt0 ?cardG_gt0 //.
   have maxCx: maximal 'C_G[x] G.
@@ -416,9 +415,9 @@ have iC1U: forall (U : {group gT}) x,
   rewrite !LaGrange ?subsetIl // mulnC dvdn_pmul2l //.
   have [sCxG nCxG] := andP (p_maximal_normal pG maxCx).
   by rewrite -norm_joinEl ?cardSg ?join_subG ?(subset_trans sUG).
-have oCG: forall U : {group gT},
+have oCG (U : {group gT}):
   Z \subset U -> U \subset G -> #|'C_G(U)| = (p * #|G : U|)%N.
-- move=> U; elim: {U}_.+1 {-2}U (ltnSn #|U|) => // m IHm U leUm sZU sUG.
+- elim: {U}_.+1 {-2}U (ltnSn #|U|) => // m IHm U leUm sZU sUG.
   have [<- | neZU] := eqVneq Z U.
     by rewrite -oZ LaGrange // (setIidPl _) // centsC subsetIr.
   have{neZU} [x Gx not_cUx]: exists2 x, x \in G & x \notin 'C(U).
@@ -518,11 +517,11 @@ Qed.
 
 (* This is the uniqueness half of Aschbacher (23.13); the proof incorporates *)
 (* in part the proof that symplectic spaces are hyperbolic (19.16).          *)
-Lemma isog_pX1p2n : forall n (gT : finGroupType) (G : {group gT}),
+Lemma isog_pX1p2n n (gT : finGroupType) (G : {group gT}) :
     prime p -> extraspecial G -> #|G| = (p ^ n.*2.+1)%N -> exponent G %| p ->
   G \isog p^{1+2*n}.
 Proof.
-move=> n gT G p_pr esG oG expG; have p_gt1 := prime_gt1 p_pr.
+move=> p_pr esG oG expG; have p_gt1 := prime_gt1 p_pr.
 have not_le_p3_p: ~~ (p ^ 3 <= p) by rewrite (leq_exp2l 3 1).
 have pG: p.-group G by rewrite /pgroup oG pnat_exp pnat_id.
 have oZ := card_center_extraspecial pG esG.
@@ -589,21 +588,20 @@ case=> defZ oZ _ _ _ _ _; split; last by rewrite oZ.
 by split; rewrite ?defPhiQ defZ.
 Qed.
 
-Lemma DnQ_P : forall n, xcprod_spec 'D^n 'Q_8 ('D^n*Q)%type.
+Lemma DnQ_P n : xcprod_spec 'D^n 'Q_8 ('D^n*Q)%type.
 Proof.
-move=> n; apply: xcprodP.
 have pQ: 2.-group 'Q_(2 ^ 3) by rewrite /pgroup card_quaternion.
 have{pQ} oZQ := card_center_extraspecial pQ Q8_extraspecial.
 suffices oZDn: #|'Z('D^n)| = 2.
-  by rewrite isog_cyclic_card ?prime_cyclic ?oZQ ?oZDn.
+  by apply: xcprodP; rewrite isog_cyclic_card ?prime_cyclic ?oZQ ?oZDn.
 have [-> | n_gt0] := posnP n; first by rewrite center_ncprod0 card_pX1p2n.
 have pr2: prime 2 by []; have pDn := pX1p2n_pgroup n pr2.
 exact: card_center_extraspecial (pX1p2n_extraspecial pr2 n_gt0).
 Qed.
 
-Lemma card_DnQ : forall n, #|'D^n*Q| = (2 ^ n.+1.*2.+1)%N.
+Lemma card_DnQ n : #|'D^n*Q| = (2 ^ n.+1.*2.+1)%N.
 Proof.
-move=> n; have oQ: #|'Q_(2 ^ 3)| = 8 by rewrite card_quaternion.
+have oQ: #|'Q_(2 ^ 3)| = 8 by rewrite card_quaternion.
 have pQ: 2.-group 'Q_8 by rewrite /pgroup oQ.
 case: DnQ_P => gz isoZ.
 rewrite -im_cpair cardMg_divn setI_im_cpair cpair_center_id.
@@ -612,13 +610,13 @@ rewrite oQ card_pX1p2n // (card_center_extraspecial pQ Q8_extraspecial).
 by rewrite -divn_mulA // mulnC -(expn_add 2 2).
 Qed.
 
-Lemma DnQ_pgroup : forall n, 2.-group 'D^n*Q.
-Proof. by move=> n; rewrite /pgroup card_DnQ pnat_exp. Qed.
+Lemma DnQ_pgroup n : 2.-group 'D^n*Q.
+Proof. by rewrite /pgroup card_DnQ pnat_exp. Qed.
 
 (* Final part of the existence half of Aschbacher (23.14). *)
-Lemma DnQ_extraspecial : forall n, extraspecial 'D^n*Q.
+Lemma DnQ_extraspecial n : extraspecial 'D^n*Q.
 Proof.
-move=> n; case: DnQ_P (DnQ_pgroup n) => gz isoZ pDnQ.
+case: DnQ_P (DnQ_pgroup n) => gz isoZ pDnQ.
 have [injDn injQ] := (injm_cpairg1 isoZ, injm_cpair1g isoZ).
 have [n0 | n_gt0] := posnP n.
   rewrite -im_cpair mulSGid; first exact: injm_extraspecial Q8_extraspecial.
@@ -630,10 +628,10 @@ exact: injm_extraspecial Q8_extraspecial.
 Qed.
 
 (* A special case of the uniqueness half of Achsbacher (23.14). *)
-Lemma card_isog8_extraspecial : forall (gT : finGroupType) (G : {group gT}),
+Lemma card_isog8_extraspecial (gT : finGroupType) (G : {group gT}) :
   #|G| = 8 -> extraspecial G -> (G \isog 'D_8) || (G \isog 'Q_8).
 Proof.
-move=> gT G oG esG; have pG: 2.-group G by rewrite /pgroup oG.
+move=> oG esG; have pG: 2.-group G by rewrite /pgroup oG.
 apply/norP=> [[notG_D8 notG_Q8]].
 have not_extG: extremal_class G = NotExtremal.
   by rewrite /extremal_class oG andFb (negPf notG_D8) (negPf notG_Q8).
@@ -652,10 +650,10 @@ Qed.
 (* the determination of quadratic spaces over 'F_2 (21.2); however we use     *)
 (* the second part of exercise (8.4) to avoid resorting to Witt's lemma and   *)
 (* Galois theory as in (20.9) and (21.1).                                     *)
-Lemma isog_2extraspecial : forall (gT : finGroupType) (G : {group gT}) n,
+Lemma isog_2extraspecial (gT : finGroupType) (G : {group gT}) n :
   #|G| = (2 ^ n.*2.+1)%N -> extraspecial G -> G \isog 'D^n \/ G \isog 'D^n.-1*Q.
 Proof.
-move=> gT G n; elim: n G => [|n IHn] G oG esG.
+elim: n G => [|n IHn] G oG esG.
   case/negP: (extraspecial_nonabelian esG).
   by rewrite cyclic_abelian ?prime_cyclic ?oG.
 have pG: 2.-group G by rewrite /pgroup oG pnat_exp.
@@ -735,9 +733,9 @@ by rewrite -injm_center // cpairg1_center injm_center // im_fR mulGid.
 Qed.
 
 (* The first concluding remark of Aschbacher (23.14). *)
-Lemma rank_Dn : forall n, 'r_2('D^n) = n.+1.
+Lemma rank_Dn n : 'r_2('D^n) = n.+1.
 Proof.
-elim=> [|n IHn]; first by rewrite p_rank_abelem ?prime_abelem ?card_pX1p2n.
+elim: n => [|n IHn]; first by rewrite p_rank_abelem ?prime_abelem ?card_pX1p2n.
 have oDDn: #|'D^n.+1| = (2 ^ n.+1.*2.+1)%N by exact: card_pX1p2n.
 have esDDn: extraspecial 'D^n.+1 by exact: pX1p2n_extraspecial.
 do [case: pX1p2S => gz isoZ; set DDn := [set: _]] in oDDn esDDn *.
@@ -774,9 +772,9 @@ by rewrite prime_abelem -?orderE ?ox //= logn_mul ?cardG_gt0 ?dimE.
 Qed.
 
 (* The second concluding remark of Aschbacher (23.14). *)
-Lemma rank_DnQ : forall n, 'r_2('D^n*Q) = n.+1.
+Lemma rank_DnQ n : 'r_2('D^n*Q) = n.+1.
 Proof.
-move=> n; have pDnQ: 2.-group 'D^n*Q := DnQ_pgroup n.
+have pDnQ: 2.-group 'D^n*Q := DnQ_pgroup n.
 have esDnQ: extraspecial 'D^n*Q := DnQ_extraspecial n.
 do [case: DnQ_P => gz isoZ; set DnQ := setT] in pDnQ esDnQ *.
 suffices [E]: exists2 E, E \in 'E*_2(DnQ) & logn 2 #|E| = n.+1.
@@ -827,9 +825,9 @@ by case/quaternion_structure: genQ => // _ _ [-> _ _ [-> _] _] _ _.
 Qed.
 
 (* The final concluding remark of Aschbacher (23.14). *)
-Lemma not_isog_Dn_DnQ : forall n, ~~ ('D^n \isog 'D^n.-1*Q).
+Lemma not_isog_Dn_DnQ n : ~~ ('D^n \isog 'D^n.-1*Q).
 Proof.
-case=> [|n] /=; first by rewrite isogEcard card_pX1p2n // card_DnQ andbF.
+case: n => [|n] /=; first by rewrite isogEcard card_pX1p2n // card_DnQ andbF.
 apply: contraL (leqnn n.+1) => isoDn1DnQ.
 by rewrite -ltnNge -rank_Dn (isog_p_rank isoDn1DnQ) rank_DnQ.
 Qed.

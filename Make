@@ -11,7 +11,7 @@
 ## Uncomment for dynamic linking
 ## <dynamic>
 
--I src
+-I src/
 
 ## </dynamic>
 
@@ -19,7 +19,7 @@
 -R theories Ssreflect
 -R src Ssreflect
 CAMLP4OPTIONS = "-loc loc"
-src/ssreflect.ml
+src/ssreflect.ml4
 theories/abelian.v
 theories/action.v
 theories/alt.v
@@ -59,6 +59,7 @@ theories/path.v
 theories/perm.v
 theories/pgroup.v
 theories/poly.v
+theories/polydiv.v
 theories/presentation.v
 theories/prime.v
 theories/primitive_action.v

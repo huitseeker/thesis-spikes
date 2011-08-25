@@ -281,9 +281,9 @@ Section SimplFun.
 
 Variables aT rT : Type.
 
-CoInductive simpl_fun : Type := SimplFun of aT -> rT.
+CoInductive simpl_fun := SimplFun of aT -> rT.
 
-Definition fun_of_simpl := fun f x => let: SimplFun lam := f in lam x.
+Definition fun_of_simpl f := fun x => let: SimplFun lam := f in lam x.
 
 Coercion fun_of_simpl : simpl_fun >-> Funclass.
 
@@ -322,7 +322,7 @@ Definition SimplFunDelta aT rT (f : aT -> aT -> rT) := [fun z => f z z].
 
 (* Shorthand for some basic equality lemmas. *)
 
-Definition erefl := refl_equal.
+Definition erefl := @refl_equal.
 Definition esym := sym_eq.
 Definition nesym := sym_not_eq.
 Definition etrans := trans_eq.
@@ -331,20 +331,20 @@ Definition congr2 := f_equal2.
 (* Force at least one implicit when used as a view. *)
 Prenex Implicits esym nesym.
 
-(* A predicate for singleton types.                                        *)
-Definition all_equal_to T (x0 : T) := forall x, x = x0.
+(* A predicate for singleton types.                                           *)
+Definition all_equal_to T (x0 : T) := forall x, unkeyed x = x0.
 
 Lemma unitE : all_equal_to tt. Proof. by case. Qed.
 
 (* A generic wrapper type *)
 
 Structure wrapped T := Wrap {unwrap : T}.
-Canonical Structure wrap T x := @Wrap T x.
+Canonical wrap T x := @Wrap T x.
 
 Prenex Implicits unwrap wrap Wrap.
 
-(* Extensional equality, for unary and binary functions, including syntactic *)
-(* sugar.                                                                    *)
+(* Extensional equality, for unary and binary functions, including syntactic  *)
+(* sugar.                                                                     *)
 
 Section ExtensionalEquality.
 
@@ -354,15 +354,18 @@ Definition eqfun (f g : B -> A) : Prop := forall x, f x = g x.
 
 Definition eqrel (r s : C -> B -> A) : Prop := forall x y, r x y = s x y.
 
-Lemma frefl : forall f, eqfun f f. Proof. by []. Qed.
-Lemma fsym : forall f g, eqfun f g -> eqfun g f. Proof. by move=> f g E x. Qed.
+Lemma frefl f : eqfun f f. Proof. by []. Qed.
+Lemma fsym f g : eqfun f g -> eqfun g f. Proof. by move=> eq_fg x. Qed.
 
-Lemma ftrans : forall f g h, eqfun f g -> eqfun g h -> eqfun f h.
-Proof. by move=> f g h eqfg eqgh x; rewrite eqfg. Qed.
+Lemma ftrans f g h : eqfun f g -> eqfun g h -> eqfun f h.
+Proof. by move=> eq_fg eq_gh x; rewrite eq_fg. Qed.
 
-Lemma rrefl : forall r, eqrel r r. Proof. by []. Qed.
+Lemma rrefl r : eqrel r r. Proof. by []. Qed.
 
 End ExtensionalEquality.
+
+Typeclasses Opaque eqfun.
+Typeclasses Opaque eqrel.
 
 Hint Resolve frefl rrefl.
 
@@ -384,8 +387,8 @@ Local Notation comp := (funcomp tt).
 
 Definition pcomp (f : B -> option A) (g : C -> option B) x := obind f (g x).
 
-Lemma eq_comp : forall f f' g g', f =1 f' -> g =1 g' -> comp f g =1 comp f' g'.
-Proof. by move=> f f' g g' Ef Eg x; rewrite /= Eg Ef. Qed.
+Lemma eq_comp f f' g g' : f =1 f' -> g =1 g' -> comp f g =1 comp f' g'.
+Proof. by move=> eq_ff' eq_gg' x; rewrite /= eq_gg' eq_ff'. Qed.
 
 End Composition.
 
@@ -454,30 +457,29 @@ Definition pcancel g := forall x, g (f x) = Some x.
 
 Definition ocancel (g : aT -> option rT) h := forall x, oapp h x (g x) = x.
 
-Lemma can_pcan : forall g, cancel g -> pcancel (fun y => Some (g y)).
-Proof. by move=> g fK x; congr (Some _). Qed.
+Lemma can_pcan g : cancel g -> pcancel (fun y => Some (g y)).
+Proof. by move=> fK x; congr (Some _). Qed.
 
-Lemma pcan_inj : forall g, pcancel g -> injective.
-Proof. by move=> g fK x y; move/(congr1 g); rewrite !fK => [[]]. Qed.
+Lemma pcan_inj g : pcancel g -> injective.
+Proof. by move=> fK x y /(congr1 g); rewrite !fK => [[]]. Qed.
 
-Lemma can_inj : forall g, cancel g -> injective.
-Proof. by move=> g; move/can_pcan; exact: pcan_inj. Qed.
+Lemma can_inj g : cancel g -> injective.
+Proof. by move/can_pcan; exact: pcan_inj. Qed.
 
-Lemma canLR : forall g x y, cancel g -> x = f y -> g x = y.
-Proof. by move=> g x y fK ->. Qed.
+Lemma canLR g x y : cancel g -> x = f y -> g x = y.
+Proof. by move=> fK ->. Qed.
 
-Lemma canRL : forall g x y, cancel g -> f x = y -> x = g y.
-Proof. by move=> g x y fK <-. Qed.
+Lemma canRL g x y : cancel g -> f x = y -> x = g y.
+Proof. by move=> fK <-. Qed.
 
 End Injections.
 
 (* cancellation lemmas for dependent type casts.                             *)
-Lemma esymK : forall T x y, cancel (@esym T x y) (@esym T y x).
-Proof. by move=> T x y; case: y /. Qed.
+Lemma esymK T x y : cancel (@esym T x y) (@esym T y x).
+Proof. by case: y /. Qed.
 
-Lemma etrans_id : forall T x y (eqxy : x = y :> T),
-  etrans (erefl x) eqxy = eqxy.
-Proof. by move=> T x y; case: y /. Qed.
+Lemma etrans_id T x y (eqxy : x = y :> T) : etrans (erefl x) eqxy = eqxy.
+Proof. by case: y / eqxy. Qed.
 
 Section InjectionsTheory.
 
@@ -486,29 +488,27 @@ Variables (A B C : Type) (f g : B -> A) (h : C -> B).
 Lemma inj_id : injective (@id A).
 Proof. by []. Qed.
 
-Lemma inj_can_sym : forall f', cancel f f' -> injective f' -> cancel f' f.
-Proof. move=> f' fK injf' x; exact: injf'. Qed.
+Lemma inj_can_sym f' : cancel f f' -> injective f' -> cancel f' f.
+Proof. move=> fK injf' x; exact: injf'. Qed.
 
 Lemma inj_comp : injective f -> injective h -> injective (f \o h).
-Proof. move=> injf injh x y; move/injf; exact: injh. Qed.
+Proof. move=> injf injh x y /injf; exact: injh. Qed.
 
-Lemma can_comp : forall f' h',
-  cancel f f' -> cancel h h' -> cancel (f \o h) (h' \o f').
-Proof. by move=> f' h' fK hK x; rewrite /= fK hK. Qed.
+Lemma can_comp f' h' : cancel f f' -> cancel h h' -> cancel (f \o h) (h' \o f').
+Proof. by move=> fK hK x; rewrite /= fK hK. Qed.
 
-Lemma pcan_pcomp : forall f' h',
+Lemma pcan_pcomp f' h' :
   pcancel f f' -> pcancel h h' -> pcancel (f \o h) (pcomp h' f').
-Proof. by move=> f' h' fK hK x; rewrite /pcomp fK /= hK. Qed.
+Proof. by move=> fK hK x; rewrite /pcomp fK /= hK. Qed.
 
 Lemma eq_inj : injective f -> f =1 g -> injective g.
 Proof. by move=> injf eqfg x y; rewrite -2!eqfg; exact: injf. Qed.
 
-Lemma eq_can : forall f' g', cancel f f' -> f =1 g -> f' =1 g' -> cancel g g'.
-Proof. by move=> f' g' fK eqfg eqfg' x; rewrite -eqfg -eqfg'. Qed.
+Lemma eq_can f' g' : cancel f f' -> f =1 g -> f' =1 g' -> cancel g g'.
+Proof. by move=> fK eqfg eqfg' x; rewrite -eqfg -eqfg'. Qed.
 
-Lemma inj_can_eq : forall f',
-  cancel f f' -> injective f' -> cancel g f' -> f =1 g.
-Proof. by move=> f' fK injf' gK x; apply: injf'; rewrite fK. Qed.
+Lemma inj_can_eq f' : cancel f f' -> injective f' -> cancel g f' -> f =1 g.
+Proof. by move=> fK injf' gK x; apply: injf'; rewrite fK. Qed.
 
 End InjectionsTheory.
 
@@ -521,17 +521,17 @@ CoInductive bijective : Prop := Bijective g of cancel f g & cancel g f.
 Hypothesis bijf : bijective.
 
 Lemma bij_inj : injective f.
-Proof. by case: bijf => [g fK _]; apply: can_inj fK. Qed.
+Proof. by case: bijf => g fK _; apply: can_inj fK. Qed.
 
-Lemma bij_can_sym : forall f', cancel f' f <-> cancel f f'.
+Lemma bij_can_sym f' : cancel f' f <-> cancel f f'.
 Proof.
-move=> f'; split=> fK; first exact: inj_can_sym fK bij_inj.
-by case: bijf => [h _ hK] x; rewrite -[x]hK fK.
+split=> fK; first exact: inj_can_sym fK bij_inj.
+by case: bijf => h _ hK x; rewrite -[x]hK fK.
 Qed.
 
-Lemma bij_can_eq : forall f' f'', cancel f f' -> cancel f f'' -> f' =1 f''.
+Lemma bij_can_eq f' f'' : cancel f f' -> cancel f f'' -> f' =1 f''.
 Proof.
-by move=> f' f'' fK fK'; apply: (inj_can_eq _ bij_inj); apply/bij_can_sym.
+by move=> fK fK'; apply: (inj_can_eq _ bij_inj); apply/bij_can_sym.
 Qed.
 
 End Bijections.
@@ -541,12 +541,11 @@ Section BijectionsTheory.
 Variables (A B C : Type) (f : B -> A) (h : C -> B).
 
 Lemma eq_bij : bijective f -> forall g, f =1 g -> bijective g.
-Proof. by move=> [f' fK f'K] g eqfg; exists f'; eapply eq_can; eauto. Qed.
+Proof. by case=> f' fK f'K g eqfg; exists f'; eapply eq_can; eauto. Qed.
 
 Lemma bij_comp : bijective f -> bijective h -> bijective (f \o h).
 Proof.
-move=> [f' fK f'K] [h' hK h'K].
-by exists (h' \o f' : _ -> _); apply can_comp; auto.
+by move=> [f' fK f'K] [h' hK h'K]; exists (h' \o f'); apply: can_comp; auto.
 Qed.
 
 Lemma bij_can_bij : bijective f -> forall f', cancel f f' -> bijective f'.

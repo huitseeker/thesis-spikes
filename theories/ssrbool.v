@@ -1,8 +1,6 @@
 (* (c) Copyright Microsoft Corporation and Inria.                       *)
 (* You may distribute this file under the terms of the CeCILL-B license *)
-Require Import ssreflect.
-Require Import ssrfun.
-Require Export Bool.
+Require Import ssreflect ssrfun.
 
 (******************************************************************************)
 (* A theory of boolean predicates and operators. A large part of this file is *)
@@ -178,25 +176,23 @@ Reserved Notation "x \in A" (at level 70, no associativity).
 Reserved Notation "x \notin A" (at level 70, no associativity).
 Reserved Notation "p1 =i p2" (at level 70, no associativity).
 
-(* We introduce a number of n-ary "list-style" notations, which share a *)
-(* common format, namely                                                *)
-(*    [op arg1, arg2, ... last_separator last_arg]                      *)
-(* This usually denotes a right-associative applications of op, e.g.,   *)
-(*  [&& a, b, c & d] denotes a && (b && (c && d))                       *)
-(* The last_separator must be a non-operator token; here we use &, | or *)
-(* => (our default is &, but we try to match the intended meaning of    *)
-(* op). The separator is a workaround for limitations of the parsing    *)
-(* engine; for similar reasons the separator cannot be omitted even     *)
-(* when last_arg can. The Notation declarations are complicated by the  *)
-(* separate treatments for fixed arities (binary for bool operators,    *)
-(* and all arities for Prop operators).                                 *)
-(*   We also use the square brackets in comprehension-style notations   *)
-(* of the form                                                          *)
-(*    [type var separator expr]                                         *)
-(* where "type" is the type of the comprehension (e.g., pred) and       *)
-(* separator is | or => . It is important that in other notations a      *)
-(* leading square bracket [ is always by an operator symbol or at least *)
-(* a fixed identifier.                                                  *)
+(* We introduce a number of n-ary "list-style" notations that share a common  *)
+(* format, namely                                                             *)
+(*    [op arg1, arg2, ... last_separator last_arg]                            *)
+(* This usually denotes a right-associative applications of op, e.g.,         *)
+(*  [&& a, b, c & d] denotes a && (b && (c && d))                             *)
+(* The last_separator must be a non-operator token. Here we use &, | or =>;   *)
+(* our default is &, but we try to match the intended meaning of op. The      *)
+(* separator is a workaround for limitations of the parsing engine; the same  *)
+(* limitations mean the separator cannot be omitted even when last_arg can.   *)
+(*   The Notation declarations are complicated by the separate treatment for  *)
+(* some fixed arities (binary for bool operators, and all arities for Prop    *)
+(* operators).                                                                *)
+(*   We also use the square brackets in comprehension-style notations         *)
+(*    [type var separator expr]                                               *)
+(* where "type" is the type of the comprehension (e.g., pred) and "separator" *)
+(* is | or => . It is important that in other notations a leading square      *)
+(* bracket [ is always by an operator symbol or a fixed identifier.           *)
 
 Reserved Notation "[ /\ P1 & P2 ]" (at level 0, only parsing).
 Reserved Notation "[ /\ P1 , P2 & P3 ]" (at level 0, format
@@ -238,48 +234,26 @@ Reserved Notation "[ 'rel' x y : T => E ]" (at level 0, x, y at level 8, format
   "'[hv' [ 'rel'  x  y :  T  => '/ '  E ] ']'").
 
 (* Shorter delimiter *)
-
 Delimit Scope bool_scope with B.
+Open Scope bool_scope.
 
-(* The Coq library forgets to set argument scopes on bool ops. *)
+(* An alternative to xorb that behaves somewhat better wrt simplification.    *)
+Definition addb b := if b then negb else id.
 
-Arguments Scope negb [bool_scope].
-Arguments Scope orb [bool_scope bool_scope].
-Arguments Scope xorb [bool_scope bool_scope].
-Arguments Scope andb [bool_scope bool_scope].
-Arguments Scope implb [bool_scope bool_scope].
-Arguments Scope eqb [bool_scope bool_scope].
-Arguments Scope leb [bool_scope bool_scope].
-Arguments Scope ifb [bool_scope bool_scope bool_scope].
-
-(* An alternative to xorb that behaves somewhat better wrt simplification. *)
-
-Definition addb b := if b then negb else fun b' => b'.
-
-(* Bool operator notation; we need to redeclare && and || so they get the *)
-(* correct argument scopes.                                               *)
-
+(* Notation for && and || is declared in Init.Datatypes. *)
 Notation "~~ b" := (negb b) : bool_scope.
-(* Redundant for now; may be added if dependency on Bool is removed
-Notation "b1 && b2" := (andb b1 b2) : bool_scope.
-Notation "b1 || b2" := (orb b1 b2) : bool_scope.
-*)
 Notation "b ==> c" := (implb b c) : bool_scope.
 Notation "b1 (+) b2" := (addb b1 b2) : bool_scope.
 
-(* Coercion bool >-> Prop.                    *)
+(* Constant is_true b := b = true is defined in Init.Datatypes. *)
+Coercion is_true : bool >-> Sortclass. (* Prop *)
 
-Coercion is_true b := b = true.
-
-(*
-Ltac fold_prop := match goal with |- (?b = true) => change (is_true b) end.
-*)
 Lemma prop_congr : forall b b' : bool, b = b' -> b = b' :> Prop.
 Proof. by move=> b b' ->. Qed.
 
 Ltac prop_congr := apply: prop_congr.
 
-(* Lemmas for auto. *)
+(* Lemmas for trivial. *)
 Lemma is_true_true : true.               Proof. by []. Qed.
 Lemma not_false_is_true : ~ false.       Proof. by []. Qed.
 Lemma is_true_locked_true : locked true. Proof. by unlock. Qed.
@@ -291,59 +265,55 @@ Definition notF := not_false_is_true.
 
 (* Negation lemmas. *)
 
-(* Note: in the general we take NEGATION as the standard form of a *)
-(* false condition : hypotheses should be of the form ~~ b rather  *)
-(* than b = false or ~ b, as much as possible.                     *)
+(* We generally take NEGATION as the standard form of a false condition:      *)
+(* negative boolean hypotheses should be of the form ~~ b, rather than ~ b or *)
+(* b = false, as much as possible.                                            *)
 
-Lemma negbT : forall b, b = false -> ~~ b.        Proof. by case. Qed.
-Lemma negbTE : forall b, ~~ b -> b = false.       Proof. by case. Qed.
-Lemma negbF : forall b : bool, b -> ~~ b = false. Proof. by case. Qed.
-Lemma negbFE : forall b, ~~ b = false -> b.       Proof. by case. Qed.
-Lemma negbK : involutive negb.                    Proof. by case. Qed.
-Lemma negbNE : forall b, ~~ ~~ b -> b.            Proof. by case. Qed.
+Lemma negbT b : b = false -> ~~ b.          Proof. by case: b. Qed.
+Lemma negbTE b : ~~ b -> b = false.         Proof. by case: b. Qed.
+Lemma negbF b : (b : bool) -> ~~ b = false. Proof. by case: b. Qed.
+Lemma negbFE b : ~~ b = false -> b.         Proof. by case: b. Qed.
+Lemma negbK : involutive negb.              Proof. by case. Qed.
+Lemma negbNE b : ~~ ~~ b -> b.              Proof. by case: b. Qed.
 
 Lemma negb_inj : injective negb. Proof. exact: can_inj negbK. Qed.
+Lemma negbLR b c : b = ~~ c -> ~~ b = c. Proof. exact: canLR negbK. Qed.
+Lemma negbRL b c : ~~ b = c -> b = ~~ c. Proof. exact: canRL negbK. Qed.
 
-Lemma negbLR : forall b c, b = ~~ c -> ~~ b = c.
-Proof. by move=> ? [] ->. Qed.
-
-Lemma negbRL : forall b c, ~~ b = c -> b = ~~ c.
-Proof. by move=> [] ? <-. Qed.
-
-Lemma contra : forall c b : bool, (c -> b) -> ~~ b -> ~~ c.
-Proof. by do 2!case. Qed.
+Lemma contra (c b : bool) : (c -> b) -> ~~ b -> ~~ c.
+Proof. by case: b => //; case: c. Qed.
 Definition contraNN := contra.
 
-Lemma contraL : forall c b : bool, (c -> ~~ b) -> b -> ~~ c.
-Proof. by do 2!case. Qed.
+Lemma contraL (c b : bool) : (c -> ~~ b) -> b -> ~~ c.
+Proof. by case: b => //; case: c. Qed.
 Definition contraTN := contraL.
 
-Lemma contraR : forall c b : bool, (~~ c -> b) -> ~~ b -> c.
-Proof. by do 2!case. Qed.
+Lemma contraR (c b : bool) : (~~ c -> b) -> ~~ b -> c.
+Proof. by case: b => //; case: c. Qed.
 Definition contraNT := contraR.
 
-Lemma contraLR : forall c b : bool, (~~ c -> ~~ b) -> b -> c.
-Proof. by do 2!case. Qed.
+Lemma contraLR (c b : bool) : (~~ c -> ~~ b) -> b -> c.
+Proof. by case: b => //; case: c. Qed.
 Definition contraTT := contraLR.
 
-Lemma contraT : forall b, (~~ b -> false) -> b. Proof. by case=> // ->. Qed.
+Lemma contraT b : (~~ b -> false) -> b. Proof. by case: b => // ->. Qed.
 
-Lemma wlog_neg : forall b, (~~ b -> b) -> b. Proof. by case=> // ->. Qed.
+Lemma wlog_neg b : (~~ b -> b) -> b. Proof. by case: b => // ->. Qed.
 
-Lemma contraFT : forall c b : bool, (~~ c -> b) -> b = false -> c.
-Proof. by case=> [] [] // ->. Qed.
+Lemma contraFT (c b : bool) : (~~ c -> b) -> b = false -> c.
+Proof. by move/contraR=> notb_c /negbT. Qed.
 
-Lemma contraFN : forall c b : bool, (c -> b) -> b = false -> ~~ c.
-Proof. by case=> [] [] //= ->. Qed.
+Lemma contraFN (c b : bool) : (c -> b) -> b = false -> ~~ c.
+Proof. by move/contra=> notb_notc /negbT. Qed.
 
-Lemma contraTF : forall c b : bool, (c -> ~~ b) -> b -> c = false.
-Proof. by case=> [] [] //= ->. Qed.
+Lemma contraTF (c b : bool) : (c -> ~~ b) -> b -> c = false.
+Proof. by move/contraL=> b_notc /b_notc/negbTE. Qed.
 
-Lemma contraNF : forall c b : bool, (c -> b) -> ~~ b -> c = false.
-Proof. by case=> [] [] // ->. Qed.
+Lemma contraNF (c b : bool) : (c -> b) -> ~~ b -> c = false.
+Proof. by move/contra=> notb_notc /notb_notc/negbTE. Qed.
 
-Lemma contraFF : forall c b : bool, (c -> b) -> b = false -> c = false.
-Proof. by case=> [] [] // ->. Qed.
+Lemma contraFF (c b : bool) : (c -> b) -> b = false -> c = false.
+Proof. by move/contraFN=> bF_notc /bF_notc/negbTE. Qed.
 
 (* Coercion of sum-style datatypes into bool, which makes it possible *)
 (* to use ssr's boolean if rather than Coq's "generic" if.            *)
@@ -392,14 +362,11 @@ Proof. by case b. Qed.
 Lemma fun_if : f (if b then vT else vF) = if b then f vT else f vF.
 Proof. by case b. Qed.
 
-Lemma if_arg : forall fT fF : A -> B,
+Lemma if_arg (fT fF : A -> B) :
   (if b then fT else fF) x = if b then fT x else fF x.
 Proof. by case b. Qed.
 
-(* Patch for a bug in ssreflect 8.1 that corrupts patterns where a *)
-(* wildcard appears under a match. Usage:                          *)
-(*   rewrite -ifE; set x := if_expr _ _ _.                         *)
-
+(* Turning a boolean "if" form into an application.                           *)
 Definition if_expr := if b then vT else vF.
 Lemma ifE : (if b then vT else vF) = if_expr. Proof. by []. Qed.
 
@@ -485,6 +452,12 @@ Proof. by case b; constructor; auto. Qed.
 Lemma iffP : (P -> Q) -> (Q -> P) -> reflect Q b.
 Proof. by case: Pb; constructor; auto. Qed.
 
+Lemma equivP : (P <-> Q) -> reflect Q b.
+Proof. by case; exact: iffP. Qed.
+
+Lemma sumboolP (decQ : {Q} + {~ Q}) : reflect Q decQ.
+Proof. by case: decQ; constructor. Qed.
+
 Lemma appP : reflect Q b -> P -> Q.
 Proof. by move=> Qb; move/introT; case: Qb. Qed.
 
@@ -500,19 +473,13 @@ Lemma rwP : P <-> b. Proof. by split; [exact: introT | exact: elimT]. Qed.
 Lemma rwP2 : reflect Q b -> (P <-> Q).
 Proof. by move=> Qb; split=> ?; [exact: appP | apply: elimT; case: Qb]. Qed.
 
-(*  Predicate family to reflect excluded middle in bool.
-    This is the natural definition, but unfortunately it is unusable because
-    matching for dependent type families in Coq is broken -- it tries to match
-    indices in the prefix of the elimination predicate for the type as it is
-    constructing it, which results in the wrong prefix on instances where one
-    of the indices appear multible times, as in the boolP lemma below.
+(*  Predicate family to reflect excluded middle in bool.                      *)
 CoInductive alt_spec : bool -> Type :=
   | AltTrue of     P : alt_spec true
   | AltFalse of ~~ b : alt_spec false.
 
 Lemma altP : alt_spec b.
 Proof. by case def_b: b / Pb; constructor; rewrite ?def_b. Qed.
-*)
 
 End Reflect.
 
@@ -524,41 +491,6 @@ Hint View for apply// equivPif|3 xorPif|3 equivPifn|3 xorPifn|3.
 
 (* Allow the direct application of a reflection lemma to a boolean assertion. *)
 Coercion elimT : reflect >-> Funclass.
-
-Section BooleanAlternative.
-
-(* Workaround for the op-cited problem: split the Proposition and the boolean *)
-(* formula into a predicate and argument, so that the index matching does not *)
-(* capture (part of) the parameters. However, we can't do this in a generic   *)
-(* proposition, as usually the proposition and predicate have different       *)
-(* syntactic structure (e.g., while in eqP both = and == have the same final  *)
-(* argument, in andP if the last argument of && is b, the last argument of /\ *)
-(* is (is_true b)), so the generic exmP theorem is restricted to propositions *)
-(* in which the formula does not appear. We handle the identity case below    *)
-(* specially, using a Phantom to split the formula in Lemma orbNP.            *)
-(*   Caveat: this kludge cannot possibly be made to work with atomic formulae *)
-(* such as bool variables.                                                    *)
-Variables (T : Type) (bP : T -> bool) (a : T).
-
-CoInductive alt_spec (P : T -> Prop) : bool -> Type :=
-  | AltTrue of      P a : alt_spec P true
-  | AltFalse of ~~ bP a : alt_spec P false.
-
-Lemma altP : forall P, reflect P (bP a) -> alt_spec (fun _ : T => P) (bP a).
-Proof. by move=> P; case bPa: (bP a) /; constructor; rewrite ?bPa. Qed.
-
-(*  This will become the official version when the dependent prefix capture
-    problem gets fixed (see above)
-Lemma boolP : exm_spec b1 b1 b1.
-Proof. by case: b1; constructor. Qed.
-*)
-
-Lemma boolP_proof : phantom bool (bP a) -> alt_spec [eta bP] (bP a).
-Proof. by move=> _; case bPa: (bP a); constructor; rewrite ?bPa. Qed.
-
-End BooleanAlternative.
-
-Notation boolP b := (boolP_proof (@Phantom bool b%B)).
 
 (* Classical reasoning becomes directly accessible for any bool subgoal.      *)
 Definition classically P := forall b : bool, (P -> b) -> b.
@@ -637,6 +569,9 @@ Variable b1 b2 b3 b4 b5 : bool.
 Lemma idP : reflect b1 b1.
 Proof. by case b1; constructor. Qed.
 
+Lemma boolP : alt_spec b1 b1 b1.
+Proof. exact: (altP idP). Qed.
+
 Lemma idPn : reflect (~~ b1) (~~ b1).
 Proof. by case b1; constructor. Qed.
 
@@ -656,8 +591,7 @@ Lemma and3P : reflect [/\ b1, b2 & b3] [&& b1, b2 & b3].
 Proof. by case b1; case b2; case b3; constructor; try by case. Qed.
 
 Lemma and4P : reflect [/\ b1, b2, b3 & b4] [&& b1, b2, b3 & b4].
-Proof.
-by case b1; case b2; case b3; case b4; constructor; try by case. Qed.
+Proof. by case b1; case b2; case b3; case b4; constructor; try by case. Qed.
 
 Lemma and5P : reflect [/\ b1, b2, b3, b4 & b5] [&& b1, b2, b3, b4 & b5].
 Proof.
@@ -715,9 +649,9 @@ Prenex Implicits andP and3P and4P and5P orP or3P or4P nandP norP implyP.
 
 (* Shorter, more systematic names for the boolean connectives laws.       *)
 
-Lemma andTb : left_id true andb.     Proof. by []. Qed.
+Lemma andTb : left_id true andb.       Proof. by []. Qed.
 Lemma andFb : left_zero false andb.    Proof. by []. Qed.
-Lemma andbT : right_id true andb.    Proof. by case. Qed.
+Lemma andbT : right_id true andb.      Proof. by case. Qed.
 Lemma andbF : right_zero false andb.   Proof. by case. Qed.
 Lemma andbb : idempotent andb.         Proof. by case. Qed.
 Lemma andbC : commutative andb.        Proof. by do 2!case. Qed.
@@ -726,87 +660,87 @@ Lemma andbCA : left_commutative andb.  Proof. by do 3!case. Qed.
 Lemma andbAC : right_commutative andb. Proof. by do 3!case. Qed.
 
 Lemma orTb : forall b, true || b.      Proof. by []. Qed.
-Lemma orFb : left_id false orb.      Proof. by []. Qed.
+Lemma orFb : left_id false orb.        Proof. by []. Qed.
 Lemma orbT : forall b, b || true.      Proof. by case. Qed.
-Lemma orbF : right_id false orb.     Proof. by case. Qed.
+Lemma orbF : right_id false orb.       Proof. by case. Qed.
 Lemma orbb : idempotent orb.           Proof. by case. Qed.
 Lemma orbC : commutative orb.          Proof. by do 2!case. Qed.
 Lemma orbA : associative orb.          Proof. by do 3!case. Qed.
 Lemma orbCA : left_commutative orb.    Proof. by do 3!case. Qed.
 Lemma orbAC : right_commutative orb.   Proof. by do 3!case. Qed.
 
-Lemma andbN : forall b, b && ~~ b = false. Proof. by case. Qed.
-Lemma andNb : forall b, ~~ b && b = false. Proof. by case. Qed.
-Lemma orbN : forall b, b || ~~ b = true.   Proof. by case. Qed.
-Lemma orNb : forall b, ~~ b || b = true.   Proof. by case. Qed.
+Lemma andbN b : b && ~~ b = false. Proof. by case: b. Qed.
+Lemma andNb b : ~~ b && b = false. Proof. by case: b. Qed.
+Lemma orbN b : b || ~~ b = true.   Proof. by case: b. Qed.
+Lemma orNb b : ~~ b || b = true.   Proof. by case: b. Qed.
 
 Lemma andb_orl : left_distributive andb orb.  Proof. by do 3!case. Qed.
 Lemma andb_orr : right_distributive andb orb. Proof. by do 3!case. Qed.
 Lemma orb_andl : left_distributive orb andb.  Proof. by do 3!case. Qed.
 Lemma orb_andr : right_distributive orb andb. Proof. by do 3!case. Qed.
 
-Lemma andb_idl : forall a b : bool, (b -> a) -> a && b = b.
-Proof. by case=> [] [] // ->. Qed.
-Lemma andb_idr : forall a b : bool, (a -> b) -> a && b = a.
-Proof. by case=> [] [] // ->. Qed.
-Lemma andb_id2l : forall a b c : bool, (a -> b = c) -> a && b = a && c.
-Proof. by case=> [] [] [] // ->. Qed.
-Lemma andb_id2r : forall a b c : bool, (b -> a = c) -> a && b = c && b.
-Proof. by case=> [] [] [] // ->. Qed.
+Lemma andb_idl (a b : bool) : (b -> a) -> a && b = b.
+Proof. by case: a; case: b => // ->. Qed.
+Lemma andb_idr (a b : bool) : (a -> b) -> a && b = a.
+Proof. by case: a; case: b => // ->. Qed.
+Lemma andb_id2l (a b c : bool) : (a -> b = c) -> a && b = a && c.
+Proof. by case: a; case: b; case: c => // ->. Qed.
+Lemma andb_id2r (a b c : bool) : (b -> a = c) -> a && b = c && b.
+Proof. by case: a; case: b; case: c => // ->. Qed.
 
-Lemma orb_idl : forall a b : bool, (a -> b) -> a || b = b.
-Proof. by case=> [] [] // ->. Qed.
-Lemma orbb_idr : forall a b : bool, (b -> a) -> a || b = a.
-Proof. by case=> [] [] // ->. Qed.
-Lemma orb_id2l : forall a b c : bool, (~~ a -> b = c) -> a || b = a || c.
-Proof. by case=> [] [] [] // ->. Qed.
-Lemma orb_id2r : forall a b c : bool, (~~ b -> a = c) -> a || b = c || b.
-Proof. by move=> [] [] [] // ->. Qed.
+Lemma orb_idl (a b : bool) : (a -> b) -> a || b = b.
+Proof. by case: a; case: b => // ->. Qed.
+Lemma orbb_idr (a b : bool) : (b -> a) -> a || b = a.
+Proof. by case: a; case: b => // ->. Qed.
+Lemma orb_id2l (a b c : bool) : (~~ a -> b = c) -> a || b = a || c.
+Proof. by case: a; case: b; case: c => // ->. Qed.
+Lemma orb_id2r (a b c : bool) : (~~ b -> a = c) -> a || b = c || b.
+Proof. by case: a; case: b; case: c => // ->. Qed.
 
-Lemma negb_and : forall b1 b2, ~~ (b1 && b2) = ~~ b1 || ~~ b2.
-Proof. by do 2!case. Qed.
+Lemma negb_and (a b : bool) : ~~ (a && b) = ~~ a || ~~ b.
+Proof. by case: a; case: b. Qed.
 
-Lemma negb_or : forall b1 b2, ~~ (b1 || b2) = ~~ b1 && ~~ b2.
-Proof. by do 2!case. Qed.
+Lemma negb_or (a b : bool) : ~~ (a || b) = ~~ a && ~~ b.
+Proof. by case: a; case: b. Qed.
 
 (* Pseudo-cancellation -- i.e, absorbtion *)
 
-Lemma andbK : forall b1 b2, b1 && b2 || b1 = b1.  Proof. by do 2!case. Qed.
-Lemma andKb : forall b1 b2, b1 || b2 && b1 = b1.  Proof. by do 2!case. Qed.
-Lemma orbK : forall b1 b2, (b1 || b2) && b1 = b1. Proof. by do 2!case. Qed.
-Lemma orKb : forall b1 b2, b1 && (b2 || b1) = b1. Proof. by do 2!case. Qed.
+Lemma andbK a b : a && b || a = a.  Proof. by case: a; case: b. Qed.
+Lemma andKb a b : a || b && a = a.  Proof. by case: a; case: b. Qed.
+Lemma orbK a b : (a || b) && a = a. Proof. by case: a; case: b. Qed.
+Lemma orKb a b : a && (b || a) = a. Proof. by case: a; case: b. Qed.
 
 (* Imply *)
 
-Lemma implybT : forall b, b ==> true.           Proof. by case. Qed.
-Lemma implybF : forall b, (b ==> false) = ~~ b. Proof. by case. Qed.
-Lemma implyFb : forall b, false ==> b.          Proof. by []. Qed.
-Lemma implyTb : forall b, (true ==> b) = b.     Proof. by []. Qed.
-Lemma implybb : forall b, b ==> b.              Proof. by case. Qed.
+Lemma implybT b : b ==> true.           Proof. by case: b. Qed.
+Lemma implybF b : (b ==> false) = ~~ b. Proof. by case: b. Qed.
+Lemma implyFb b : false ==> b.          Proof. by []. Qed.
+Lemma implyTb b : (true ==> b) = b.     Proof. by []. Qed.
+Lemma implybb b : b ==> b.              Proof. by case: b. Qed.
 
-Lemma negb_imply : forall b1 b2, ~~ (b1 ==> b2) = b1 && ~~ b2.
-Proof. by do 2!case. Qed.
+Lemma negb_imply a b : ~~ (a ==> b) = a && ~~ b.
+Proof. by case: a; case: b. Qed.
 
-Lemma implybE : forall b1 b2, (b1 ==> b2) = ~~ b1 || b2.
-Proof. by do 2!case. Qed.
+Lemma implybE a b : (a ==> b) = ~~ a || b.
+Proof. by case: a; case: b. Qed.
 
-Lemma implyNb : forall b1 b2, (~~ b1 ==> b2) = b1 || b2.
-Proof. by do 2!case. Qed.
+Lemma implyNb a b : (~~ a ==> b) = a || b.
+Proof. by case: a; case: b. Qed.
 
-Lemma implybN : forall b1 b2, (b1 ==> ~~ b2) = (b2 ==> ~~ b1).
-Proof. by do 2!case. Qed.
+Lemma implybN a b : (a ==> ~~ b) = (b ==> ~~ a).
+Proof. by case: a; case: b. Qed.
 
-Lemma implybNN : forall b1 b2, (~~ b1 ==> ~~ b2) = b2 ==> b1.
-Proof. by do 2!case. Qed.
+Lemma implybNN a b : (~~ a ==> ~~ b) = b ==> a.
+Proof. by case: a; case: b. Qed.
 
-Lemma implyb_idl : forall a b : bool, (~~ a -> b) -> (a ==> b) = b.
-Proof. by case=> [] [] // ->. Qed.
-Lemma implyb_idr : forall a b : bool, (b -> ~~ a) -> (a ==> b) = ~~ a.
-Proof. by case=> [] [] // ->. Qed.
-Lemma implyb_id2l : forall a b c : bool, (a -> b = c) -> (a ==> b) = (a ==> c).
-Proof. by case=> [] [] [] // ->. Qed. 
+Lemma implyb_idl (a b : bool) : (~~ a -> b) -> (a ==> b) = b.
+Proof. by case: a; case: b => // ->. Qed.
+Lemma implyb_idr (a b : bool) : (b -> ~~ a) -> (a ==> b) = ~~ a.
+Proof. by case: a; case: b => // ->. Qed.
+Lemma implyb_id2l (a b c : bool) : (a -> b = c) -> (a ==> b) = (a ==> c).
+Proof. by case: a; case: b; case: c => // ->. Qed.
 
-(* addition (xor) *)
+(* Addition (xor) *)
 
 Lemma addFb : left_id false addb.               Proof. by []. Qed.
 Lemma addbF : right_id false addb.              Proof. by case. Qed.
@@ -822,16 +756,17 @@ Lemma addbK : right_loop id addb.               Proof. by do 2!case. Qed.
 Lemma addIb : left_injective addb.              Proof. by do 3!case. Qed.
 Lemma addbI : right_injective addb.             Proof. by do 3!case. Qed.
 
-Lemma addTb : forall b, true (+) b = ~~ b. Proof. by []. Qed.
-Lemma addbT : forall b, b (+) true = ~~ b. Proof. by case. Qed.
+Lemma addTb b : true (+) b = ~~ b. Proof. by []. Qed.
+Lemma addbT b : b (+) true = ~~ b. Proof. by case: b. Qed.
 
-Lemma addbN : forall b1 b2, b1 (+) ~~ b2 = ~~ (b1 (+) b2).
-Proof. by do 2!case. Qed.
-Lemma addNb : forall b1 b2, ~~ b1 (+) b2 = ~~ (b1 (+) b2).
-Proof. by do 2!case. Qed.
+Lemma addbN a b : a (+) ~~ b = ~~ (a (+) b).
+Proof. by case: a; case: b. Qed.
+Lemma addNb a b : ~~ a (+) b = ~~ (a (+) b).
+Proof. by case: a; case: b. Qed.
 
-Lemma addbP : forall b1 b2, b1 (+) b2 -> ~~ b1 = b2.
-Proof. by do 2!case. Qed.
+Lemma addbP a b : reflect (~~ a = b) (a (+) b).
+Proof. by case: a; case: b; constructor. Qed.
+Implicit Arguments addbP [a b].
 
 (* Resolution tactic for blindly weeding out common terms from boolean       *)
 (* equalities. When faced with a goal of the form (andb/orb/addb b1 b2) = b3 *)
@@ -850,106 +785,98 @@ Ltac bool_congr :=
   | |- (~~ ?X1 = ?X2) => congr 1 negb
   end.
 
-(****************************************************************************)
-(* Predicates, i.e., packaged functions to bool.                            *)
-(*                                                                          *)
-(* pred T, the basic type for predicates over a type T, is simply an alias  *)
-(* for T -> bool.                                                           *)
-(* We actually distinguish two kinds of predicates, which we call           *)
-(* applicative and collective, based on the syntax used to specialize them  *)
-(* to some value x in T:                                                    *)
-(* - For an applicative predicate P, one uses prefix syntax:                *)
-(*     P x                                                                  *)
-(*   Also, most operations on applicative predicates use prefix syntax as   *)
-(*   well (e.g., predI P Q).                                                *)
-(* - For a collective predicate A, one uses infix syntax:                   *)
-(*     x \in A                                                              *)
-(*   and all operations on collective predicates use infix syntax as well   *)
-(*   (e.g., [predI A & B]).                                                 *)
-(* There are only two kinds of applicative predicates:                      *)
-(* - pred T, the alias for T -> bool mentioned above                        *)
-(* - simpl_pred T, an alias for simpl_fun T bool with a coercion to pred T  *)
-(*    that auto-simplifies on application (see ssrfun).                     *)
-(* On the other hand, the set of collective predicate types is open-ended,  *)
-(* via                                                                      *)
-(* - predType T, a Structure that can be used to put Canonical collective   *)
-(*    predicate interpretation on other types, such as lists, tuples,       *)
-(*    finite sets, etc.                                                     *)
-(* Indeed, we define such interpretations for applicative predicate types,  *)
-(* which can therefore also be used with the infix syntax, e.g. x \in predI *)
-(* P Q. Moreover these infix forms are convertible to their prefix          *)
-(* counterpart (e.g., predI P Q x which in turn simplifies to P x && Q x).  *)
-(* The converse is not true, however; collective predicate types cannot, in *)
-(* general, be used applicatively, because of the "uniform inheritance"     *)
-(* restriction on implicit coercions.                                       *)
-(*                                                                          *)
-(* However, we do define an explicit generic coercion                       *)
-(* - mem : forall (pT : predType), pT -> mem_pred T                         *)
-(*    where mem_pred T is a variant of simpl_pred T that preserves the      *)
-(*    infix syntax, i.e., mem A x auto-simplifies to x \in A                *)
-(* Indeed, the infix "collective" operators are notation for a prefix       *)
-(* operator with arguments of type mem_pred T or pred T, applied to coerced *)
-(* collective predicates, e.g.,                                             *)
-(*      Notation "x \in A" := (in_mem x (mem A)).                           *)
-(* This prevents the variability in the predicate type from interfering     *)
-(* with the application of generic lemmas. Moreover this also makes it much *)
-(* easier to define generic lemmas, because the simplest type -- pred T --  *)
-(* can be used as the type of generic collective predicates, provided one   *)
-(* takes care not to use it applicatively; this avoids the burden of having *)
-(* to declare a different predicate type for each predicate parameter of    *)
-(* each section or lemma.                                                   *)
-(*                                                                          *)
-(*   This trick is made possible by the fact that the constructor of the    *)
-(* mem_pred T type aligns the unification process, forcing a generic        *)
-(* "collective" predicate A : pred T to unify with the actual collective B, *)
-(* which mem has coerced to pred T via an internal, hidden implicit         *)
-(* coercion, supplied by the predType structure for B. Users should take    *)
-(* care not to inadvertently "strip" (mem B) down to the coerced B, since   *)
-(* this will expose the internal coercion: Coq will display a term B x that *)
-(* can't be typed as such. The topredE lemma can be used to restore the     *)
-(* x \in B syntax in this case. While -topredE can conversely be used to    *)
-(* change x \in P into P x, it is safer to use the inE and memE lemmas      *)
-(* instead, as they do not run the risk of exposing internal coercions. As  *)
-(* a consequence, it is better to explicitly cast a generic applicative     *)
-(* pred T to simpl_pred, using the SimplPred constructor, when it is used   *)
-(* as a collective predicate (see, e.g., Lemma eq_big in bigop.v).          *)
-(*                                                                          *)
-(*   We also sometimes "instantiate" the predType structure by defining a   *)
-(* coercion to the sort of the predPredType structure.  This works better   *)
-(* for types such as {set T} that have subtypes that coerce to them, since  *)
-(* the same coercion will be inserted by the application of mem. It also    *)
-(* allows us to turn some specific Types (namely, any aT : predArgType)     *)
-(* into predicates, specifically, the total predicate over that type, i.e., *)
-(* fun _ : aT => true. This allows us to write, e.g., #|'I_n| for the       *)
-(* cardinal of the (finite) type of integers less than n.                   *)
-(*                                                                          *)
-(* Collective predicates have a specific extensional equality,              *)
-(* - A =i B,                                                                *)
-(* while applicative predicates just use the extensional equality of        *)
-(* functions,                                                               *)
-(* - P =1 Q                                                                 *)
-(* The two forms are convertible, however.                                  *)
-(* We lift boolean operations to predicates, defining:                      *)
-(* - predU (union), predI (intersection), predC (complement),               *)
-(*   predD (difference), and preim (preimage, i.e., composition)            *)
-(* For each operation we define three forms, typically:                     *)
-(* - predU : pred T -> pred T -> simpl_pred T                               *)
-(* - [predU A & B], a Notation for predU (mem A) (mem B)                    *)
-(* - xpredU, a Notation for the lambda-expression inside predU,             *)
-(*     which is mostly useful as an argument of =1, since it exposes the    *)
-(*     head constant of the expression to the ssreflect matching algorithm. *)
-(* The syntax for the preimage of a collective predicate A is               *)
-(* - [preim f of A]                                                         *)
-(* Finally, the generic syntax for defining a simpl_pred T is               *)
-(* - [pred x : T | P(x)], [pred x | P(x)], [pred x \in A | P(x)             *)
-(* We also support boolean relations, but only the applicative form, with   *)
-(* types                                                                    *)
-(* - rel T, an alias for T -> pred T                                        *)
-(* - simpl_rel T, an auto-simplifying version, and syntax                   *)
-(*   [rel x y | P(x,y)], [rel x y \in A & B | P(x,y)], etc.                 *)
-(* The notation [rel of fA] can be used to coerce a function returning a    *)
-(* collective predicate to one returning pred T.                            *)
-(****************************************************************************)
+(******************************************************************************)
+(* Predicates, i.e., packaged functions to bool.                              *)
+(* - pred T, the basic type for predicates over a type T, is simply an alias  *)
+(* for T -> bool.                                                             *)
+(* We actually distinguish two kinds of predicates, which we call applicative *)
+(* and collective, based on the syntax used to test them at some x in T:      *)
+(* - For an applicative predicate P, one uses prefix syntax:                  *)
+(*     P x                                                                    *)
+(*   Also, most operations on applicative predicates use prefix syntax as     *)
+(*   well (e.g., predI P Q).                                                  *)
+(* - For a collective predicate A, one uses infix syntax:                     *)
+(*     x \in A                                                                *)
+(*   and all operations on collective predicates use infix syntax as well     *)
+(*   (e.g., [predI A & B]).                                                   *)
+(* There are only two kinds of applicative predicates:                        *)
+(* - pred T, the alias for T -> bool mentioned above                          *)
+(* - simpl_pred T, an alias for simpl_fun T bool with a coercion to pred T    *)
+(*   that auto-simplifies on application (see ssrfun).                        *)
+(* On the other hand, the set of collective predicate types is open-ended via *)
+(* - predType T, a Structure that can be used to put Canonical collective     *)
+(*   predicate interpretation on other types, such as lists, tuples,          *)
+(*   finite sets, etc.                                                        *)
+(* Indeed, we define such interpretations for applicative predicate types,    *)
+(* which can therefore also be used with the infix syntax, e.g.,              *)
+(*     x \in predI P Q                                                        *)
+(* Moreover these infix forms are convertible to their prefix counterpart     *)
+(* (e.g., predI P Q x which in turn simplifies to P x && Q x). The converse   *)
+(* is not true, however; collective predicate types cannot, in general, be    *)
+(* general, be used applicatively, because of the "uniform inheritance"       *)
+(* restriction on implicit coercions.                                         *)
+(*   However, we do define an explicit generic coercion                       *)
+(* - mem : forall (pT : predType), pT -> mem_pred T                           *)
+(*   where mem_pred T is a variant of simpl_pred T that preserves the infix   *)
+(*   syntax, i.e., mem A x auto-simplifies to x \in A.                        *)
+(* Indeed, the infix "collective" operators are notation for a prefix         *)
+(* operator with arguments of type mem_pred T or pred T, applied to coerced   *)
+(* collective predicates, e.g.,                                               *)
+(*      Notation "x \in A" := (in_mem x (mem A)).                             *)
+(* This prevents the variability in the predicate type from interfering with  *)
+(* the application of generic lemmas. Moreover this also makes it much easier *)
+(* to define generic lemmas, because the simplest type -- pred T -- can be    *)
+(* used as the type of generic collective predicates, provided one takes care *)
+(* not to use it applicatively; this avoids the burden of having to declare a *)
+(* different predicate type for each predicate parameter of each section or   *)
+(* lemma.                                                                     *)
+(*   This trick is made possible by the fact that the constructor of the      *)
+(* mem_pred T type aligns the unification process, forcing a generic          *)
+(* "collective" predicate A : pred T to unify with the actual collective B,   *)
+(* which mem has coerced to pred T via an internal, hidden implicit coercion, *)
+(* supplied by the predType structure for B. Users should take care not to    *)
+(* inadvertently "strip" (mem B) down to the coerced B, since this will       *)
+(* expose the internal coercion: Coq will display a term B x that cannot be   *)
+(* typed as such. The topredE lemma can be used to restore the x \in B        *)
+(* syntax in this case. While -topredE can conversely be used to change       *)
+(* x \in P into P x, it is safer to use the inE and memE lemmas instead, as   *)
+(* they do not run the risk of exposing internal coercions. As a consequence  *)
+(* it is better to explicitly cast a generic applicative pred T to simpl_pred *)
+(* using the SimplPred constructor, when it is used as a collective predicate *)
+(* (see, e.g., Lemma eq_big in bigop).                                        *)
+(*   We also sometimes "instantiate" the predType structure by defining a     *)
+(* coercion to the sort of the predPredType structure. This works better for  *)
+(* types such as {set T} that have subtypes that coerce to them, since the    *)
+(* same coercion will be inserted by the application of mem. It also lets us  *)
+(* turn any Type aT : predArgType into the total predicate over that type,    *)
+(* i.e., fun _: aT => true. This allows us to write, e.g., #|'I_n| for the    *)
+(* cardinal of the (finite) type of integers less than n.                     *)
+(*   Collective predicates have a specific extensional equality,              *)
+(*   - A =i B,                                                                *)
+(* while applicative predicates use the extensional equality of functions,    *)
+(*   - P =1 Q                                                                 *)
+(* The two forms are convertible, however.                                    *)
+(* We lift boolean operations to predicates, defining:                        *)
+(* - predU (union), predI (intersection), predC (complement),                 *)
+(*   predD (difference), and preim (preimage, i.e., composition)              *)
+(* For each operation we define three forms, typically:                       *)
+(* - predU : pred T -> pred T -> simpl_pred T                                 *)
+(* - [predU A & B], a Notation for predU (mem A) (mem B)                      *)
+(* - xpredU, a Notation for the lambda-expression inside predU,               *)
+(*     which is mostly useful as an argument of =1, since it exposes the head *)
+(*     head constant of the expression to the ssreflect matching algorithm.   *)
+(* The syntax for the preimage of a collective predicate A is                 *)
+(* - [preim f of A]                                                           *)
+(* Finally, the generic syntax for defining a simpl_pred T is                 *)
+(* - [pred x : T | P(x)], [pred x | P(x)], [pred x \in A | P(x)               *)
+(* We also support boolean relations, but only the applicative form, with     *)
+(* types                                                                      *)
+(* - rel T, an alias for T -> pred T                                          *)
+(* - simpl_rel T, an auto-simplifying version, and syntax                     *)
+(*   [rel x y | P(x,y)], [rel x y \in A & B | P(x,y)], etc.                   *)
+(* The notation [rel of fA] can be used to coerce a function returning a      *)
+(* collective predicate to one returning pred T.                              *)
+(******************************************************************************)
 
 Definition pred T := T -> bool.
 
@@ -998,17 +925,17 @@ Coercion rel_of_simpl_rel (r : simpl_rel) : rel T := fun x y => r x y.
 
 Definition relU r1 r2 := SimplRel (xrelU r1 r2).
 
-Lemma subrelUl : forall r1 r2, subrel r1 (relU r1 r2).
-Proof. by move=> * ? *; apply/orP; left. Qed.
+Lemma subrelUl r1 r2 : subrel r1 (relU r1 r2).
+Proof. by move=> *; apply/orP; left. Qed.
 
-Lemma subrelUr : forall r1 r2, subrel r2 (relU r1 r2).
-Proof. by move=> * ? *; apply/orP; right. Qed.
+Lemma subrelUr r1 r2 : subrel r2 (relU r1 r2).
+Proof. by move=> *; apply/orP; right. Qed.
 
-CoInductive mem_pred : Type := Mem of pred T.
+CoInductive mem_pred := Mem of pred T.
 
 Definition isMem pT topred mem := mem = (fun p : pT => Mem [eta topred p]).
 
-Structure predType : Type := PredType {
+Structure predType := PredType {
   pred_sort :> Type;
   topred : pred_sort -> pred T;
   _ : {mem | isMem topred mem}
@@ -1016,13 +943,11 @@ Structure predType : Type := PredType {
 
 Definition mkPredType pT toP := PredType (exist (@isMem pT toP) _ (erefl _)).
 
-Canonical Structure predPredType := Eval hnf in @mkPredType (pred T) id.
-Canonical Structure simplPredType := Eval hnf in mkPredType pred_of_simpl.
+Canonical predPredType := Eval hnf in @mkPredType (pred T) id.
+Canonical simplPredType := Eval hnf in mkPredType pred_of_simpl.
 
-Coercion pred_of_mem mp : pred_sort predPredType :=
-  let: Mem p := mp in [eta p].
-
-Canonical Structure memPredType := Eval hnf in mkPredType pred_of_mem.
+Coercion pred_of_mem mp : pred_sort predPredType := let: Mem p := mp in [eta p].
+Canonical memPredType := Eval hnf in mkPredType pred_of_mem.
 
 Definition clone_pred U :=
   fun pT & pred_sort pT -> U =>
@@ -1048,19 +973,19 @@ Notation "[ 'rel' x y : T | E ]" := (SimplRel (fun x y : T => E))
 Notation "[ 'predType' 'of' T ]" := (@clone_pred _ T _ id _ _ id)
   (at level 0, format "[ 'predType'  'of'  T ]") : form_scope.
 
-(* This redundant coercion lets us "inherit" the simpl_predType canonical *)
-(* structure by declaring a coercion to simpl_pred. This hack is the only *)
-(* way to put a predType structure on a predArgType. We use simpl_pred    *)
-(* rather than pred to ensure that /= removes the identity coercion. Note *)
-(* that the coercion will never be used directly for simpl_pred, since    *)
-(* the canonical structure should always resolve.                         *)
+(* This redundant coercion lets us "inherit" the simpl_predType canonical    *)
+(* instance by declaring a coercion to simpl_pred. This hack is the only way *)
+(* to put a predType structure on a predArgType. We use simpl_pred rather    *)
+(* than pred to ensure that /= removes the identity coercion. Note that the  *)
+(* coercion will never be used directly for simpl_pred, since the canonical  *)
+(* instance should always be resolved.                                       *)
 
 Notation pred_class := (pred_sort (predPredType _)).
 Coercion sort_of_simpl_pred T (p : simpl_pred T) : pred_class := p : pred T.
 
-(* This lets us use some types as a synonym for their universal predicate. *)
-(* Unfortunately, this won't work for existing types like bool, unless     *)
-(* we redefine bool, true, false and all bool ops.                         *)
+(* This lets us use some types as a synonym for their universal predicate.    *)
+(* Unfortunately, this won't work for existing types like bool, unless we     *)
+(* redefine bool, true, false and all bool ops.                               *)
 Definition predArgType := Type.
 Identity Coercion sort_of_predArgType : predArgType >-> Sortclass.
 Coercion pred_of_argType (T : predArgType) : simpl_pred T := predT.
@@ -1068,8 +993,8 @@ Coercion pred_of_argType (T : predArgType) : simpl_pred T := predT.
 Notation "{ : T }" := (T%type : predArgType)
   (at level 0, format "{ :  T }") : type_scope.
 
-(* These must be defined outside a Section because "cooking" kills the *)
-(* nosimpl tag.                                                        *)
+(* These must be defined outside a Section because "cooking" kills the        *)
+(* nosimpl tag.                                                               *)
 
 Definition mem T (pT : predType T) : pT -> mem_pred T :=
   nosimpl (let: PredType _ _ (exist mem _) := pT return pT -> _ in mem).
@@ -1081,6 +1006,8 @@ Coercion pred_of_mem_pred T mp := [pred x : T | in_mem x mp].
 
 Definition eq_mem T p1 p2 := forall x : T, in_mem x p1 = in_mem x p2.
 Definition sub_mem T p1 p2 := forall x : T, in_mem x p1 -> in_mem x p2.
+
+Typeclasses Opaque eq_mem.
 
 Notation "x \in A" := (in_mem x (mem A)) : bool_scope.
 Notation "x \in A" := (in_mem x (mem A)) : bool_scope.
@@ -1126,34 +1053,34 @@ Section simpl_mem.
 
 Variables (T : Type) (pT : predType T).
 
-Lemma mem_topred : forall (p : pT), mem (topred p) = mem p.
-Proof. by rewrite /mem; case: pT => T1 app1 [mem1  /= ->]. Qed.
+Lemma mem_topred (p : pT) : mem (topred p) = mem p.
+Proof. by rewrite /mem; case: pT p => T1 app1 [mem1 /= ->]. Qed.
 
-Lemma topredE : forall x (p : pT), topred p x = (x \in p).
-Proof. by move=> *; rewrite -mem_topred. Qed.
+Lemma topredE x (p : pT) : topred p x = (x \in p).
+Proof. by rewrite -mem_topred. Qed.
 
-Lemma in_simpl : forall x (p : simpl_pred T), (x \in p) = p x.
+Lemma in_simpl x (p : simpl_pred T) : (x \in p) = p x.
 Proof. by []. Qed.
 
-Lemma simpl_predE : forall (p : pred T), [pred x | p x] =1 p.
+Lemma simpl_predE (p : pred T) : [pred x | p x] =1 p.
 Proof. by []. Qed.
 
 Definition inE := (in_simpl, simpl_predE). (* to be extended *)
 
-Lemma mem_simpl : forall (p : simpl_pred T), mem p = p :> pred T.
+Lemma mem_simpl (p : simpl_pred T) : mem p = p :> pred T.
 Proof. by []. Qed.
 
 Definition memE := mem_simpl. (* could be extended *)
 
-Lemma mem_mem : forall p : pT, (mem (mem p) = mem p) * (mem [mem p] = mem p).
-Proof. by move=> p; rewrite -mem_topred. Qed.
+Lemma mem_mem (p : pT) : (mem (mem p) = mem p) * (mem [mem p] = mem p).
+Proof. by rewrite -mem_topred. Qed.
 
 End simpl_mem.
 
 Section RelationProperties.
 
-(* Caveat: reflexive should not be used to state lemmas, since auto *)
-(* and trivial will not expand the constant.                        *)
+(* Caveat: reflexive should not be used to state lemmas, as auto and trivial  *)
+(* will not expand the constant.                                              *)
 
 Variable T : Type.
 
@@ -1175,11 +1102,18 @@ Definition irreflexive := forall x, R x x = false.
 Definition left_transitive := forall x y, R x y -> R x =1 R y.
 Definition right_transitive := forall x y, R x y -> R^~ x =1 R^~ y.
 
+Hypotheses (symR : symmetric) (trR : transitive).
+
+Lemma sym_left_transitive : left_transitive.
+Proof. by move=> x y Rxy z; apply/idP/idP; apply: trR; rewrite // symR. Qed.
+
+Lemma sym_right_transitive : right_transitive.
+Proof. by move=> x y /sym_left_transitive Rxy z; rewrite !(symR z) Rxy. Qed.
+
 End RelationProperties.
 
-Lemma rev_trans : forall T (R : rel T),
-  transitive R -> transitive (fun x y => R y x).
-Proof. by move=> T R trR x y z Ryx Rzy; exact: trR Rzy Ryx. Qed.
+Lemma rev_trans T (R : rel T) : transitive R -> transitive (fun x y => R y x).
+Proof. by move=> trR x y z Ryx Rzy; exact: trR Rzy Ryx. Qed.
 
 (* Property localization *)
 
@@ -1197,7 +1131,7 @@ Notation Local ph := (phantom Prop).
 
 Definition prop_for (x : T1) P & ph {all1 P} := P x.
 
-Lemma forE : forall x P phP, @prop_for x P phP = P x. Proof. by []. Qed.
+Lemma forE x P phP : @prop_for x P phP = P x. Proof. by []. Qed.
 
 Definition prop_in1 P & ph {all1 P} :=
   forall x, in_mem x d1 -> P x.
@@ -1293,12 +1227,11 @@ Notation "{ 'on' cd , 'bijective' f }" := (bijective_on (mem cd) f)
   (at level 0, f at level 8,
    format "{ 'on'  cd ,  'bijective'  f }") : type_scope.
 
-(* Weakening and monotonicity lemmas for localized predicates. *)
-(* Note that using these lemmas in backward reasoning will     *)
-(* cause the expansion of the predicate definition, as Coq     *)
-(* needs to expose the quantifier to apply these lemmas. We    *)
-(* define some specialized variants to avoid this for some of  *)
-(* the ssrfun definitions.                                     *)
+(* Weakening and monotonicity lemmas for localized predicates.                *)
+(* Note that using these lemmas in backward reasoning will force expansion of *)
+(* the predicate definition, as Coq needs to expose the quantifier to apply   *)
+(* these lemmas. We define a few specialized variants to avoid this for some  *)
+(* of the ssrfun predicates.                                                  *)
 
 Section LocalGlobal.
 
@@ -1330,20 +1263,15 @@ Proof. by move=> ? ?; auto. Qed.
 Lemma in3T : {in T1 & T2 & T3, {all3 P3}} -> {all3 P3}.
 Proof. by move=> ? ?; auto. Qed.
 
-Lemma sub_in1 : forall Ph : ph {all1 P1},
-  prop_in1 d1' Ph -> prop_in1 d1 Ph.
-Proof. move=> ? allP x; move/sub1; exact: allP. Qed.
+Lemma sub_in1 (Ph : ph {all1 P1}) : prop_in1 d1' Ph -> prop_in1 d1 Ph.
+Proof. move=> allP x /sub1; exact: allP. Qed.
 
-Lemma sub_in11 : forall Ph : ph {all2 P2},
-  prop_in11 d1' d2' Ph -> prop_in11 d1 d2 Ph.
-Proof. move=> ? allP x1 x2; move/sub1=> d1x1; move/sub2; exact: allP. Qed.
+Lemma sub_in11 (Ph : ph {all2 P2}) : prop_in11 d1' d2' Ph -> prop_in11 d1 d2 Ph.
+Proof. move=> allP x1 x2 /sub1 d1x1 /sub2; exact: allP. Qed.
 
-Lemma sub_in111 :  forall Ph : ph {all3 P3},
+Lemma sub_in111 (Ph : ph {all3 P3}) :
   prop_in111 d1' d2' d3' Ph -> prop_in111 d1 d2 d3 Ph.
-Proof.
-move=> ? allP x1 x2 x3.
-move/sub1=> d1x1; move/sub2=> d2x2; move/sub3; exact: allP.
-Qed.
+Proof. by move=> allP x1 x2 x3 /sub1 d1x1 /sub2 d2x2 /sub3; exact: allP. Qed.
 
 Let allQ1 f'' := {all1 Q1 f''}.
 Let allQ1l f'' h' := {all1 Q1l f'' h'}.
@@ -1363,43 +1291,35 @@ Proof. by move=> ? ?; auto. Qed.
 Lemma on2T : {on T2 &, allQ2 f} -> allQ2 f.
 Proof. by move=> ? ?; auto. Qed.
 
-Lemma subon1 : forall (Phf : ph (allQ1 f)) (Ph : ph (allQ1 f)),
+Lemma subon1 (Phf : ph (allQ1 f)) (Ph : ph (allQ1 f)) :
   prop_on1 d2' Phf Ph -> prop_on1 d2 Phf Ph.
-Proof. move=> ? ? allQ x; move/sub2; exact: allQ. Qed.
+Proof. by move=> allQ x /sub2; exact: allQ. Qed.
 
-Lemma subon1l : forall (Phf : ph (allQ1l f)) (Ph : ph (allQ1l f h)),
+Lemma subon1l (Phf : ph (allQ1l f)) (Ph : ph (allQ1l f h)) :
   prop_on1 d2' Phf Ph -> prop_on1 d2 Phf Ph.
-Proof. move=> ? ? allQ x; move/sub2; exact: allQ. Qed.
+Proof. by move=> allQ x /sub2; exact: allQ. Qed.
 
-Lemma subon2 : forall (Phf : ph (allQ2 f)) (Ph : ph (allQ2 f)),
+Lemma subon2 (Phf : ph (allQ2 f)) (Ph : ph (allQ2 f)) :
   prop_on2 d2' Phf Ph -> prop_on2 d2 Phf Ph.
-Proof. move=> ? ? allQ x y; move/sub2=> d2fx; move/sub2; exact: allQ. Qed.
+Proof. by move=> allQ x y /sub2=> d2fx /sub2; exact: allQ. Qed.
 
 Lemma can_in_inj : {in D1, cancel f g} -> {in D1 &, injective f}.
-Proof.
-by move=> fK x y; do 2![move/fK=> def; rewrite -{2}def {def}] => ->.
-Qed.
+Proof. by move=> fK x y /fK{2}<- /fK{2}<- ->. Qed.
 
-Lemma canLR_in : forall x y,
-  {in D1, cancel f g} -> y \in D1 -> x = f y -> g x = y.
-Proof. by move=> x y fK D1y ->; rewrite fK. Qed.
+Lemma canLR_in x y : {in D1, cancel f g} -> y \in D1 -> x = f y -> g x = y.
+Proof. by move=> fK D1y ->; rewrite fK. Qed.
 
-Lemma canRL_in : forall x y,
-  {in D1, cancel f g} -> x \in D1 -> f x = y -> x = g y.
-Proof. by move=> x y fK D1x <-; rewrite fK. Qed.
+Lemma canRL_in x y : {in D1, cancel f g} -> x \in D1 -> f x = y -> x = g y.
+Proof. by move=> fK D1x <-; rewrite fK. Qed.
 
 Lemma on_can_inj : {on D2, cancel f & g} -> {on D2 &, injective f}.
-Proof.
-by move=> fK x y; do 2![move/fK=> def; rewrite -{2}def {def}] => ->.
-Qed.
+Proof. by move=> fK x y /fK{2}<- /fK{2}<- ->. Qed.
 
-Lemma canLR_on : forall x y,
-  {on D2, cancel f & g} -> f y \in D2 -> x = f y -> g x = y.
-Proof. by move=> x y fK D2fy ->; rewrite fK. Qed.
+Lemma canLR_on x y : {on D2, cancel f & g} -> f y \in D2 -> x = f y -> g x = y.
+Proof. by move=> fK D2fy ->; rewrite fK. Qed.
 
-Lemma canRL_on : forall x y,
-  {on D2, cancel f & g} -> f x \in D2 -> f x = y -> x = g y.
-Proof. by move=> x y fK D2fx <-; rewrite fK. Qed.
+Lemma canRL_on x y : {on D2, cancel f & g} -> f x \in D2 -> f x = y -> x = g y.
+Proof. by move=> fK D2fx <-; rewrite fK. Qed.
 
 Lemma inW_bij : bijective f -> {in D1, bijective f}.
 Proof. by case=> g' fK g'K; exists g' => * ? *; auto. Qed.
@@ -1413,36 +1333,34 @@ Proof. by case=> g' fK g'K; exists g' => * ? *; auto. Qed.
 Lemma onT_bij : {on T2, bijective f} -> bijective f.
 Proof. by case=> g' fK g'K; exists g' => * ? *; auto. Qed.
 
-Lemma sub_in_bij : forall D1' : pred T1,
+Lemma sub_in_bij (D1' : pred T1) :
   {subset D1 <= D1'} -> {in D1', bijective f} -> {in D1, bijective f}.
 Proof.
-move=> D1' subD [g' fK g'K].
-exists g' => x; move/subD; [exact: fK | exact: g'K].
+by move=> subD [g' fK g'K]; exists g' => x; move/subD; [exact: fK | exact: g'K].
 Qed.
 
-Lemma subon_bij :  forall D2' : pred T2,
- {subset D2 <= D2'} -> {on D2', bijective f} -> {on D2, bijective f}.
+Lemma subon_bij (D2' : pred T2) :
+  {subset D2 <= D2'} -> {on D2', bijective f} -> {on D2, bijective f}.
 Proof.
-move=> D2' subD [g' fK g'K].
-exists g' => x; move/subD; [exact: fK | exact: g'K].
+by move=> subD [g' fK g'K]; exists g' => x; move/subD; [exact: fK | exact: g'K].
 Qed.
 
 End LocalGlobal.
 
-Lemma sub_in2 : forall T d d' (P : T -> T -> Prop),
+Lemma sub_in2 T d d' (P : T -> T -> Prop) :
   sub_mem d d' -> forall Ph : ph {all2 P}, prop_in2 d' Ph -> prop_in2 d Ph.
-Proof. by move=> T d d' P /= sub; exact: sub_in11. Qed.
+Proof. by move=> /= sub_dd'; exact: sub_in11. Qed.
 
-Lemma sub_in3 : forall T d d' (P : T -> T -> T -> Prop),
+Lemma sub_in3 T d d' (P : T -> T -> T -> Prop) :
   sub_mem d d' -> forall Ph : ph {all3 P}, prop_in3 d' Ph -> prop_in3 d Ph.
-Proof. by move=> T d d' P /= sub; exact: sub_in111. Qed.
+Proof. by move=> /= sub_dd'; exact: sub_in111. Qed.
 
-Lemma sub_in12 : forall T1 T d1 d1' d d' (P : T1 -> T -> T -> Prop),
+Lemma sub_in12 T1 T d1 d1' d d' (P : T1 -> T -> T -> Prop) :
   sub_mem d1 d1' -> sub_mem d d' ->
   forall Ph : ph {all3 P}, prop_in12 d1' d' Ph -> prop_in12 d1 d Ph.
-Proof. by move=> T1 T d1 d1' d d' P /= sub1 sub; exact: sub_in111. Qed.
+Proof. by move=> /= sub1 sub; exact: sub_in111. Qed.
 
-Lemma sub_in21 : forall T T3 d d' d3 d3' (P : T -> T -> T3 -> Prop),
+Lemma sub_in21 T T3 d d' d3 d3' (P : T -> T -> T3 -> Prop) :
   sub_mem d d' -> sub_mem d3 d3' ->
   forall Ph : ph {all3 P}, prop_in21 d' d3' Ph -> prop_in21 d d3 Ph.
-Proof. by move=> T T3 d d' d3 d3' P /= sub sub3; exact: sub_in111. Qed.
+Proof. by move=> /= sub sub3; exact: sub_in111. Qed.

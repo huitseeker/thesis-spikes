@@ -81,26 +81,23 @@ Local Coercion f2sub : fmod_of >-> FinGroup.arg_sort.
 
 Variables (gT : finGroupType) (A : {group gT}) (abelA : abelian A).
 Local Notation fmodA := (fmod_of abelA).
-Implicit Types x y z : gT.
-Implicit Types u v w : fmodA.
+Implicit Types (x y z : gT) (u v w : fmodA).
 
 Let sub2f (s : [subg A]) := Fmod abelA (valP s).
 
 Definition fmval u := val (f2sub u).
-Canonical Structure fmod_subType := [subType for fmval by @fmod_of_rect _ _ _].
+Canonical fmod_subType := [subType for fmval by @fmod_of_rect _ _ _].
 Local Notation valA := (@val _ _ fmod_subType) (only parsing).
 Definition fmod_eqMixin := Eval hnf in [eqMixin of fmodA by <:].
-Canonical Structure fmod_eqType := Eval hnf in EqType fmodA fmod_eqMixin.
+Canonical fmod_eqType := Eval hnf in EqType fmodA fmod_eqMixin.
 Definition fmod_choiceMixin := [choiceMixin of fmodA by <:].
-Canonical Structure fmod_choiceType :=
-  Eval hnf in ChoiceType fmodA fmod_choiceMixin.
+Canonical fmod_choiceType := Eval hnf in ChoiceType fmodA fmod_choiceMixin.
 Definition fmod_countMixin := [countMixin of fmodA by <:].
-Canonical Structure fmod_countType :=
-  Eval hnf in CountType fmodA fmod_countMixin.
-Canonical Structure fmod_subCountType := Eval hnf in [subCountType of fmodA].
+Canonical fmod_countType := Eval hnf in CountType fmodA fmod_countMixin.
+Canonical fmod_subCountType := Eval hnf in [subCountType of fmodA].
 Definition fmod_finMixin := [finMixin of fmodA by <:].
-Canonical Structure fmod_finType := Eval hnf in FinType fmodA fmod_finMixin.
-Canonical Structure fmod_subFinType := Eval hnf in [subFinType of fmodA].
+Canonical fmod_finType := Eval hnf in FinType fmodA fmod_finMixin.
+Canonical fmod_subFinType := Eval hnf in [subFinType of fmodA].
 
 Definition fmod x := sub2f (subg A x).
 Definition actr u x := if x \in 'N(A) then fmod (fmval u ^ x) else u.
@@ -108,52 +105,52 @@ Definition actr u x := if x \in 'N(A) then fmod (fmval u ^ x) else u.
 Definition fmod_opp u := sub2f u^-1.
 Definition fmod_add u v := sub2f (u * v).
 
-Lemma fmod_add0r : left_id (sub2f 1) fmod_add.
+Fact fmod_add0r : left_id (sub2f 1) fmod_add.
 Proof. move=> u; apply: val_inj; exact: mul1g. Qed.
 
-Lemma fmod_addrA : associative fmod_add.
+Fact fmod_addrA : associative fmod_add.
 Proof. move=> u v w; apply: val_inj; exact: mulgA. Qed.
 
-Lemma fmod_addNr : left_inverse (sub2f 1) fmod_opp fmod_add.
+Fact fmod_addNr : left_inverse (sub2f 1) fmod_opp fmod_add.
 Proof. move=> u; apply: val_inj; exact: mulVg. Qed.
 
-Lemma fmod_addrC : commutative fmod_add.
+Fact fmod_addrC : commutative fmod_add.
 Proof. case=> x Ax [y Ay]; apply: val_inj; exact: (centsP abelA). Qed.
 
 Definition fmod_zmodMixin := 
   ZmodMixin fmod_addrA fmod_addrC fmod_add0r fmod_addNr.
-Canonical Structure fmod_zmodType := Eval hnf in ZmodType fmodA fmod_zmodMixin.
-Canonical Structure fmod_finZmodType := Eval hnf in [finZmodType of fmodA].
-Canonical Structure fmod_baseFinGroupType :=
+Canonical fmod_zmodType := Eval hnf in ZmodType fmodA fmod_zmodMixin.
+Canonical fmod_finZmodType := Eval hnf in [finZmodType of fmodA].
+Canonical fmod_baseFinGroupType :=
   Eval hnf in [baseFinGroupType of fmodA for +%R].
-Canonical Structure fmod_finGroupType :=
+Canonical fmod_finGroupType :=
   Eval hnf in [finGroupType of fmodA for +%R].
 
-Lemma fmodP : forall u, val u \in A. Proof. exact: valP. Qed.
+Lemma fmodP u : val u \in A. Proof. exact: valP. Qed.
 Lemma fmod_inj : injective fmval. Proof. exact: val_inj. Qed.
-Lemma congr_fmod : forall u v, u = v -> fmval u = fmval v.
+Lemma congr_fmod u v : u = v -> fmval u = fmval v.
 Proof. exact: congr1. Qed.
 
 Lemma fmvalA : {morph valA : x y / x + y >-> (x * y)%g}. Proof. by []. Qed.
 Lemma fmvalN : {morph valA : x / - x >-> x^-1%g}. Proof. by []. Qed.
 Lemma fmval0 : valA 0 = 1%g. Proof. by []. Qed.
-Canonical Structure fmval_morphism := @Morphism _ _ setT fmval (in2W fmvalA).
+Canonical fmval_morphism := @Morphism _ _ setT fmval (in2W fmvalA).
 
 Definition fmval_sum := big_morph fmval fmvalA fmval0.
 
-Lemma fmvalZ : forall n, {morph valA : x / x *+ n >-> (x ^+ n)%g}.
-Proof. by move=> n u; rewrite /= morphX ?inE. Qed.
+Lemma fmvalZ n : {morph valA : x / x *+ n >-> (x ^+ n)%g}.
+Proof. by move=> u; rewrite /= morphX ?inE. Qed.
 
-Lemma fmodKcond : forall x, val (fmod x) = if x \in A then x else 1%g.
-Proof. by move=> x; rewrite /= /fmval /= val_insubd. Qed.
+Lemma fmodKcond x : val (fmod x) = if x \in A then x else 1%g.
+Proof. by rewrite /= /fmval /= val_insubd. Qed.
 Lemma fmodK : {in A, cancel fmod val}. Proof. exact: subgK. Qed.
 Lemma fmvalK : cancel val fmod.
 Proof. by case=> x Ax; apply: val_inj; rewrite /fmod /= sgvalK. Qed.
 Lemma fmod1 : fmod 1 = 0. Proof. by rewrite -fmval0 fmvalK. Qed.
 Lemma fmodM : {in A &, {morph fmod : x y / (x * y)%g >-> x + y}}.
 Proof. by move=> x y Ax Ay /=; apply: val_inj; rewrite /fmod morphM. Qed.
-Canonical Structure fmod_morphism := Morphism fmodM.
-Lemma fmodX : forall n, {in A, {morph fmod : x / (x ^+ n)%g >-> x *+ n}}.
+Canonical fmod_morphism := Morphism fmodM.
+Lemma fmodX n : {in A, {morph fmod : x / (x ^+ n)%g >-> x *+ n}}.
 Proof. exact: morphX. Qed.
 Lemma fmodV : {morph fmod : x / x^-1%g >-> - x}.
 Proof. 
@@ -168,22 +165,20 @@ Qed.
 
 Notation "u ^@ x" := (actr u x) : ring_scope.
 
-Lemma fmvalJcond : forall u x,
+Lemma fmvalJcond u x :
   val (u ^@ x) = if x \in 'N(A) then val u ^ x else val u.
+Proof. by case: ifP => Nx; rewrite /actr Nx ?fmodK // memJ_norm ?fmodP. Qed.
+
+Lemma fmvalJ u x : x \in 'N(A) -> val (u ^@ x) = val u ^ x.
+Proof. by move=> Nx; rewrite fmvalJcond Nx. Qed.
+
+Lemma fmodJ x y : y \in 'N(A) -> fmod (x ^ y) = fmod x ^@ y.
 Proof.
-by move=> u x; case: ifP => Nx; rewrite /actr Nx ?fmodK // memJ_norm ?fmodP.
+move=> Ny; apply: val_inj; rewrite fmvalJ ?fmodKcond ?memJ_norm //.
+by case: ifP => // _; rewrite conj1g.
 Qed.
 
-Lemma fmvalJ : forall u x, x \in 'N(A) -> val (u ^@ x) = val u ^ x.
-Proof. by move=> u x Nx; rewrite fmvalJcond Nx. Qed.
-
-Lemma fmodJ : forall x y, y \in 'N(A) -> fmod (x ^ y) = fmod x ^@ y.
-Proof.
-move=> x y Ny; apply: val_inj; rewrite fmvalJ ?fmodKcond ?memJ_norm //.
-by case: ifP => E; rewrite ?E // conj1g.
-Qed.
-
-Lemma actr_is_action : is_action 'N(A) actr.
+Fact actr_is_action : is_action 'N(A) actr.
 Proof.
 split=> [a u v eq_uv_a | u a b Na Nb].
   case Na: (a \in 'N(A)); last by rewrite /actr Na in eq_uv_a.
@@ -191,41 +186,38 @@ split=> [a u v eq_uv_a | u a b Na Nb].
 by apply: val_inj; rewrite !fmvalJ ?groupM ?conjgM.
 Qed.
 
-Canonical Structure actr_action := Action actr_is_action.
+Canonical actr_action := Action actr_is_action.
 Notation "''M'" := actr_action (at level 0) : action_scope.
 
-Lemma act0r : forall x, 0 ^@ x = 0.
-Proof. by move=> x; rewrite /actr conj1g morph1 if_same. Qed.
+Lemma act0r x : 0 ^@ x = 0.
+Proof. by rewrite /actr conj1g morph1 if_same. Qed.
 
-Lemma actAr : forall x, {morph actr^~ x : u v / u + v}.
+Lemma actAr x : {morph actr^~ x : u v / u + v}.
 Proof.
-move=> x u v; apply: val_inj; rewrite !(fmvalA, fmvalJcond) conjMg.
-by case: (x \in 'N(A)).
+by move=> u v; apply: val_inj; rewrite !(fmvalA, fmvalJcond) conjMg; case: ifP.
 Qed.
 
 Definition actr_sum x := big_morph _ (actAr x) (act0r x).
 
-Lemma actNr : forall x, {morph actr^~ x : u / - u}.
+Lemma actNr x : {morph actr^~ x : u / - u}.
+Proof. by move=> u; apply: (addrI (u ^@ x)); rewrite -actAr !subrr act0r. Qed.
+
+Lemma actZr x n : {morph actr^~ x : u / u *+ n}.
 Proof.
-by move=> x u; apply: (@addrI _ (u ^@ x)); rewrite -actAr !subrr act0r.
+by move=> u; elim: n => [|n IHn]; rewrite ?act0r // !mulrS actAr IHn.
 Qed.
 
-Lemma actZr : forall x n, {morph actr^~ x : u / u *+ n}.
-Proof.
-by move=> x n u; elim: n => [|n IHn]; rewrite ?act0r // !mulrS actAr IHn.
-Qed.
-
-Lemma actr_is_groupAction : is_groupAction setT 'M.
+Fact actr_is_groupAction : is_groupAction setT 'M.
 Proof.
 move=> a Na /=; rewrite inE; apply/andP; split.
   by apply/subsetP=> u _; rewrite inE.
 by apply/morphicP=> u v _ _; rewrite !permE /= actAr.
 Qed.
 
-Canonical Structure actr_groupAction := GroupAction actr_is_groupAction.
+Canonical actr_groupAction := GroupAction actr_is_groupAction.
 Notation "''M'" := actr_groupAction (at level 0) : groupAction_scope.
 
-Lemma actr1 : forall u, u ^@ 1 = u.
+Lemma actr1 u : u ^@ 1 = u.
 Proof. exact: act1. Qed.
 
 Lemma actrM : {in 'N(A) &, forall x y u, u ^@ (x * y) = u ^@ x ^@ y}.
@@ -233,14 +225,14 @@ Proof.
 by move=> x y Nx Ny /= u; apply: val_inj; rewrite !fmvalJ ?conjgM ?groupM.
 Qed.
 
-Lemma actrK : forall x, cancel (actr^~ x) (actr^~ x^-1%g). 
+Lemma actrK x : cancel (actr^~ x) (actr^~ x^-1%g). 
 Proof.
-move=> x u; apply: val_inj; rewrite !fmvalJcond groupV.
+move=> u; apply: val_inj; rewrite !fmvalJcond groupV.
 by case: ifP => -> //; rewrite conjgK.
 Qed.
 
-Lemma actrKV : forall x, cancel (actr^~ x^-1%g) (actr^~ x). 
-Proof. by move=> x u; rewrite -{2}(invgK x) actrK. Qed.
+Lemma actrKV x : cancel (actr^~ x^-1%g) (actr^~ x). 
+Proof. by move=> u; rewrite /= -{2}(invgK x) actrK. Qed.
 
 End OneFinMod.
 
@@ -252,17 +244,17 @@ Notation "''M'" := actr_groupAction : groupAction_scope.
 
 End FiniteModule.
 
-Canonical Structure FiniteModule.fmod_subType.
-Canonical Structure FiniteModule.fmod_eqType.
-Canonical Structure FiniteModule.fmod_choiceType.
-Canonical Structure FiniteModule.fmod_countType.
-Canonical Structure FiniteModule.fmod_finType.
-Canonical Structure FiniteModule.fmod_subCountType.
-Canonical Structure FiniteModule.fmod_subFinType.
-Canonical Structure FiniteModule.fmod_zmodType.
-Canonical Structure FiniteModule.fmod_finZmodType.
-Canonical Structure FiniteModule.fmod_baseFinGroupType.
-Canonical Structure FiniteModule.fmod_finGroupType.
+Canonical FiniteModule.fmod_subType.
+Canonical FiniteModule.fmod_eqType.
+Canonical FiniteModule.fmod_choiceType.
+Canonical FiniteModule.fmod_countType.
+Canonical FiniteModule.fmod_finType.
+Canonical FiniteModule.fmod_subCountType.
+Canonical FiniteModule.fmod_subFinType.
+Canonical FiniteModule.fmod_zmodType.
+Canonical FiniteModule.fmod_finZmodType.
+Canonical FiniteModule.fmod_baseFinGroupType.
+Canonical FiniteModule.fmod_finGroupType.
 
 (* Still allow ring notations, but give priority to groups now. *)
 Import FiniteModule GroupScope.
@@ -285,50 +277,45 @@ Local Notation fmod := (fmod abelH).
 
 Theorem Gaschutz_split : [splits G, over H] = [splits P, over H].
 Proof.
-apply/splitsP/splitsP=> [[K] | [Q]].
-  case/complP=> trHK eqHK; exists (K :&: P)%G.
-  rewrite inE setICA (setIidPl sHP) setIC trHK eqxx group_modl // eqHK.
-  by rewrite (sameP eqP setIidPr).
-case/complP=> trHQ eqHQ.
+apply/splitsP/splitsP=> [[K /complP[tiHK eqHK]] | [Q /complP[tiHQ eqHQ]]].
+  exists (K :&: P)%G; rewrite inE setICA (setIidPl sHP) setIC tiHK eqxx.
+  by rewrite group_modl // eqHK (sameP eqP setIidPr).
 have sQP: Q \subset P by rewrite -eqHQ mulG_subr.
 pose rP x := repr (P :* x); pose pP x := x * (rP x)^-1.
-have PpP: pP _ \in P by move=> x; rewrite -mem_rcoset rcoset_repr rcoset_refl.
-have rPmul : forall x y, x \in P -> rP (x * y) = rP y.
-  by move=> x y Px; rewrite /rP rcosetM rcoset_id.
+have PpP x: pP x \in P by rewrite -mem_rcoset rcoset_repr rcoset_refl.
+have rPmul x y: x \in P -> rP (x * y) = rP y.
+  by move=> Px; rewrite /rP rcosetM rcoset_id.
 pose pQ x := remgr H Q x; pose rH x := pQ (pP x) * rP x.
 have pQhq: {in H & Q, forall h q, pQ (h * q) = q} by exact: remgrMid.
 have pQmul: {in P &, {morph pQ : x y / x * y}}.
   apply: remgrM; [exact/complP | exact: normalS (nsHG)].
-have HrH: forall x, rH x \in H :* x.
-  move=> x; rewrite rcoset_sym mem_rcoset invMg mulgA mem_divgr //.
-  by rewrite eqHQ PpP.
-have GrH: forall x, x \in G -> rH x \in G.
-  move=> x Gx; case/rcosetP: (HrH x) => y Hy ->.
+have HrH x: rH x \in H :* x.
+  by rewrite rcoset_sym mem_rcoset invMg mulgA mem_divgr // eqHQ PpP.
+have GrH x: x \in G -> rH x \in G.
+  move=> Gx; case/rcosetP: (HrH x) => y Hy ->.
   by rewrite groupM // (subsetP sHG).
-have rH_Pmul: forall x y, x \in P -> rH (x * y) = pQ x * rH y.
-  by move=> *; rewrite /rH mulgA -pQmul; first by rewrite /pP rPmul ?mulgA.
-have rH_Hmul: forall h y, h \in H -> rH (h * y) = rH y.
-  by move=> h y Hh; rewrite rH_Pmul ?(subsetP sHP) // -(mulg1 h) pQhq ?mul1g.
+have rH_Pmul x y: x \in P -> rH (x * y) = pQ x * rH y.
+  by move=> Px; rewrite /rH mulgA -pQmul; first by rewrite /pP rPmul ?mulgA.
+have rH_Hmul h y: h \in H -> rH (h * y) = rH y.
+  by move=> Hh; rewrite rH_Pmul ?(subsetP sHP) // -(mulg1 h) pQhq ?mul1g.
 pose mu x y := fmod ((rH x * rH y)^-1 * rH (x * y)).
 pose nu y := (\sum_(Px \in rcosets P G) mu (repr Px) y)%R.
-have rHmul : {in G &, forall x y, rH (x * y) = rH x * rH y * val (mu x y)}.
+have rHmul: {in G &, forall x y, rH (x * y) = rH x * rH y * val (mu x y)}.
   move=> x y Gx Gy; rewrite /= fmodK ?mulKVg // -mem_lcoset lcoset_sym.
   rewrite -norm_rlcoset; last by rewrite nHG ?GrH ?groupM.
   by rewrite (rcoset_transl (HrH _)) -rcoset_mul ?nHG ?GrH // mem_mulg.
-have actrH : forall a x, x \in G -> (a ^@ rH x = a ^@ x)%R.
-  move=> a x Gx; apply: val_inj; rewrite /= !fmvalJ ?nHG ?GrH //.
-  case/rcosetP: (HrH x) => b; move/(fmodK abelH)=> <- ->; rewrite conjgM.
+have actrH a x: x \in G -> (a ^@ rH x = a ^@ x)%R.
+  move=> Gx; apply: val_inj; rewrite /= !fmvalJ ?nHG ?GrH //.
+  case/rcosetP: (HrH x) => b /(fmodK abelH) <- ->; rewrite conjgM.
   by congr (_ ^ _); rewrite conjgE -fmvalN -!fmvalA (addrC a) addKr.
-have mu_Pmul: forall x y z, x \in P -> mu (x * y) z = mu y z.
-  move=> x y z Px; congr fmod; rewrite -mulgA !(rH_Pmul x) ?rPmul //.
+have mu_Pmul x y z: x \in P -> mu (x * y) z = mu y z.
+  move=> Px; congr fmod; rewrite -mulgA !(rH_Pmul x) ?rPmul //.
   by rewrite -mulgA invMg -mulgA mulKg.
-have mu_Hmul: forall x y z, x \in G -> y \in H -> mu x (y * z) = mu x z.
-  move=> x y z Gx Hy; congr fmod.
-  rewrite (mulgA x) (conjgCV x) -mulgA 2?rH_Hmul //.
+have mu_Hmul x y z: x \in G -> y \in H -> mu x (y * z) = mu x z.
+  move=> Gx Hy; congr fmod; rewrite (mulgA x) (conjgCV x) -mulgA 2?rH_Hmul //.
   by rewrite -mem_conjg (normP _) ?nHG.
-have{mu_Hmul} nu_Hmul: forall y z, y \in H -> nu (y * z) = nu z.
-  move=> y z Hy; apply: eq_bigr => Px; case/rcosetsP=> x Gx ->{Px}.
-  apply: mu_Hmul y z _ Hy.
+have{mu_Hmul} nu_Hmul y z: y \in H -> nu (y * z) = nu z.
+  move=> Hy; apply: eq_bigr => _ /rcosetsP[x Gx ->]; apply: mu_Hmul y z _ Hy.
   by rewrite -(groupMl _ (subsetP sPG _ (PpP x))) mulgKV.
 have cocycle_mu: {in G & &, forall x y z,
   mu (x * y)%g z + mu x y ^@ z = mu y z + mu x (y * z)%g}%R.
@@ -338,18 +325,18 @@ have cocycle_mu: {in G & &, forall x y z,
   rewrite mulgA -(mulgA _ (rH z)) -conjgC mulgA -!rHmul ?groupM //.
   by rewrite mulgA -mulgA -2!(mulgA (rH x)) -!rHmul ?groupM.
 move: mu => mu in rHmul mu_Pmul cocycle_mu nu nu_Hmul.
-have{cocycle_mu} cocycle_nu : {in G &, forall y z,
+have{cocycle_mu} cocycle_nu: {in G &, forall y z,
   nu z + nu y ^@ z = mu y z *+ #|G : P| + nu (y * z)%g}%R.
 - move=> y z Gy Gz; rewrite /= (actr_sum z) /=.
   have ->: (nu z = \sum_(Px \in rcosets P G) mu (repr Px * y)%g z)%R.
     rewrite /nu (reindex_acts _ (actsRs_rcosets P G) Gy) /=.
-    apply: eq_bigr => Px; case/rcosetsP=> x Gx /= ->{Px}.
+    apply: eq_bigr => _ /rcosetsP[x Gx /= ->].
     rewrite rcosetE -rcosetM.
     case: repr_rcosetP=> p1 Pp1; case: repr_rcosetP=> p2 Pp2.
     by rewrite -mulgA [x * y]lock !mu_Pmul.
-  rewrite -sumr_const -!big_split /=; apply: eq_bigr => Px.
-  case/rcosetsP=> x Gx ->{Px}; rewrite -cocycle_mu //.
-  by case: repr_rcosetP=> p1 Pp1; rewrite groupMr // (subsetP sPG).
+  rewrite -sumr_const -!big_split /=; apply: eq_bigr => _ /rcosetsP[x Gx ->].
+  rewrite -cocycle_mu //; case: repr_rcosetP => p1 Pp1.
+  by rewrite groupMr // (subsetP sPG).
 move: nu => nu in nu_Hmul cocycle_nu.
 pose f x := rH x * val (nu x *+ m)%R.
 have{cocycle_nu} fM: {in G &, {morph f : x y / x * y}}.
@@ -359,11 +346,10 @@ have{cocycle_nu} fM: {in G &, {morph f : x y / x * y}}.
   rewrite  -(addrC (nu y)) cocycle_nu // mulrn_addl !fmvalA; congr (_ * _).
   by rewrite !fmvalZ expgnK ?fmodP.
 exists (Morphism fM @* G)%G; apply/complP; split.
-  apply/trivgP; apply/subsetP=> x; case/setIP=> Hx.
-  case/morphimP=> y _ Gy eq_x.
+  apply/trivgP/subsetP=> x /setIP[Hx /morphimP[y _ Gy eq_x]].
   apply/set1P; move: Hx; rewrite {x}eq_x /= groupMr ?subgP //.
   rewrite -{1}(mulgKV y (rH y)) groupMl -?mem_rcoset // => Hy.
-  rewrite -(mulg1 y) /f nu_Hmul // rH_Hmul //; exact: (morph1 (Morphism fM)).
+  by rewrite -(mulg1 y) /f nu_Hmul // rH_Hmul //; exact: (morph1 (Morphism fM)).
 apply/setP=> x; apply/mulsgP/idP=> [[h y Hh fy ->{x}] | Gx].
   rewrite groupMl; last exact: (subsetP sHG).
   case/morphimP: fy => z _ Gz ->{h Hh y}.
@@ -377,35 +363,33 @@ Qed.
 Theorem Gaschutz_transitive : {in [complements to H in G] &,
   forall K L,  K :&: P = L :&: P -> exists2 x, x \in H & L :=: K :^ x}.
 Proof.
-move=> K L /=; set Q := K :&: P; case/complP=> trHK eqHK cpHL QeqLP.
+move=> K L /=; set Q := K :&: P => /complP[tiHK eqHK] cpHL QeqLP.
 have [trHL eqHL] := complP cpHL.
 pose nu x := fmod (divgr H L x^-1).
 have sKG: {subset K <= G} by apply/subsetP; rewrite -eqHK mulG_subr.
 have sLG: {subset L <= G} by apply/subsetP; rewrite -eqHL mulG_subr.
-have val_nu: forall x, x \in G -> val (nu x) = divgr H L x^-1.
-  by move=> x Gx; rewrite fmodK // mem_divgr // eqHL groupV.
+have val_nu x: x \in G -> val (nu x) = divgr H L x^-1.
+  by move=> Gx; rewrite fmodK // mem_divgr // eqHL groupV.
 have nu_cocycle: {in G &, forall x y, nu (x * y)%g = nu x ^@ y + nu y}%R.
   move=> x y Gx Gy; apply: val_inj; rewrite fmvalA fmvalJ ?nHG //.
   rewrite !val_nu ?groupM // /divgr conjgE !mulgA mulgK.
   by rewrite !(invMg, remgrM cpHL) ?groupV ?mulgA.
-have nuL: forall x, x \in L -> nu x = 0%R.
-  move=> x Lx; apply: val_inj; rewrite val_nu ?sLG //.
+have nuL x: x \in L -> nu x = 0%R.
+  move=> Lx; apply: val_inj; rewrite val_nu ?sLG //.
   by rewrite /divgr remgr_id ?groupV ?mulgV.
 exists (fmval ((\sum_(X \in rcosets Q K) nu (repr X)) *+ m)).
   exact: fmodP.
 apply/eqP; rewrite eq_sym eqEcard; apply/andP; split; last first.
   by rewrite cardJg -(leq_pmul2l (cardG_gt0 H)) -!TI_cardMg // eqHL eqHK.
-apply/subsetP=> x_nu; case/imsetP=> x Kx ->{x_nu}.
-rewrite conjgE mulgA (conjgC _ x).
+apply/subsetP=> _ /imsetP[x Kx ->]; rewrite conjgE mulgA (conjgC _ x).
 have Gx: x \in G by rewrite sKG.
 rewrite conjVg -mulgA -fmvalJ ?nHG // -fmvalN -fmvalA (_ : _ + _ = nu x)%R.
   by rewrite val_nu // mulKVg groupV mem_remgr // eqHL groupV.
 rewrite actZr -!mulNrn -mulrn_addl actr_sum.
 rewrite addrC (reindex_acts _ (actsRs_rcosets _ K) Kx) -sumr_sub /= -/Q.
-rewrite (eq_bigr (fun _ => nu x)) => [|Qy]; last first.
-  case/imsetP=> y Ky ->{Qy}; rewrite !rcosetE -rcosetM QeqLP.
-  case: (repr_rcosetP (L :&: P) _) => z; case/setIP=> Lz _.
-  case: (repr_rcosetP (L :&: P) _) => t; case/setIP=> Lt _.
+rewrite (eq_bigr (fun _ => nu x)) => [|_ /imsetP[y Ky ->]]; last first.
+  rewrite !rcosetE -rcosetM QeqLP.
+  case: repr_rcosetP => z /setIP[Lz _]; case: repr_rcosetP => t /setIP[Lt _].
   rewrite !nu_cocycle ?groupM ?(sKG y) // ?sLG //.
   by rewrite (nuL z) ?(nuL t) // !act0r !add0r addrC addKr.
 apply: val_inj; rewrite sumr_const !fmvalZ.
@@ -423,15 +407,15 @@ End Gaschutz.
 (* Aschbacher requires a separate reduction to p-groups to yield 1.6(d),      *)
 (* making it altogether longer than the direct Gaschutz-style proof.          *)
 (* This Lemma is used in maximal.v for the proof of Aschbacher 24.7.          *)
-Lemma coprime_abel_cent_TI : forall (gT : finGroupType) (A G : {group gT}),
+Lemma coprime_abel_cent_TI (gT : finGroupType) (A G : {group gT}) :
   A \subset 'N(G) -> coprime #|G| #|A| -> abelian G -> 'C_[~: G, A](A) = 1.
 Proof.
-move=> gT A G nGA coGA abG; pose f x := val (\sum_(a \in A) fmod abG x ^@ a)%R.
+move=> nGA coGA abG; pose f x := val (\sum_(a \in A) fmod abG x ^@ a)%R.
 have fM: {in G &, {morph f : x y / x * y}}.
   move=> x y Gx Gy /=; rewrite -fmvalA -big_split /=; congr (fmval _).
   by apply: eq_bigr => a Aa; rewrite fmodM // actAr.
-have nfA: forall x a, a \in A -> f (x ^ a) = f x.
-  move=> x a Aa; rewrite {2}/f (reindex_inj (mulgI a)) /=; congr (fmval _).
+have nfA x a: a \in A -> f (x ^ a) = f x.
+  move=> Aa; rewrite {2}/f (reindex_inj (mulgI a)) /=; congr (fmval _).
   apply: eq_big => [b | b Ab]; first by rewrite groupMl.
   by rewrite -!fmodJ ?groupM ?(subsetP nGA) // conjgM.
 have kerR: [~: G, A] \subset 'ker (Morphism fM).
@@ -439,7 +423,7 @@ have kerR: [~: G, A] \subset 'ker (Morphism fM).
   have Gxa: x ^ a \in G by rewrite memJ_norm ?(subsetP nGA).
   rewrite commgEl; apply/kerP; rewrite (groupM, morphM) ?(groupV, morphV) //=.
   by rewrite nfA ?mulVg.
-apply/trivgP; apply/subsetP=> x; case/setIP=> Rx cAx; apply/set1P.
+apply/trivgP; apply/subsetP=> x /setIP[Rx cAx]; apply/set1P.
 have Gx: x \in G by apply: subsetP Rx; rewrite commg_subl.
 rewrite -(expgnK coGA Gx) (_ : x ^+ _ = 1) ?exp1gn //.
 rewrite -(fmodK abG Gx) -fmvalZ -(mker (subsetP kerR x Rx)); congr fmval.
@@ -468,28 +452,28 @@ Lemma transferM : {in G &, {morph transfer : x y / (x * y)%g >-> x + y}}.
 Proof.
 move=> s t Gs Gt /=.
 rewrite [transfer t](reindex_acts 'Rs _ Gs) ?actsRs_rcosets //= -big_split /=.
-apply: eq_bigr => C; case/rcosetsP=> x Gx ->{C}; rewrite !rcosetE -!rcosetM.
+apply: eq_bigr => _ /rcosetsP[x Gx ->]; rewrite !rcosetE -!rcosetM.
 rewrite -zmodMgE -morphM -?mem_rcoset; first by rewrite !mulgA mulgKV rcosetM.
   by rewrite rcoset_repr rcosetM mem_rcoset mulgK mem_repr_rcoset.
 by rewrite rcoset_repr (rcosetM _ _ t) mem_rcoset mulgK mem_repr_rcoset.
 Qed.
 
-Canonical Structure transfer_morphism := Morphism transferM.
+Canonical transfer_morphism := Morphism transferM.
 
 Definition coset_transversal X := 
   {in rcosets H G, forall Hx : {set gT}, X Hx \in Hx}.
 
 (* Aschbacher 37.1 *)
-Lemma transfer_indep : forall X, coset_transversal X -> {in G, transfer =1 V X}.
+Lemma transfer_indep X : coset_transversal X -> {in G, transfer =1 V X}.
 Proof.
-move=> X repsX g Gg.
-apply: (@addrI _ (\sum_(Hx \in rcosets H G) fmalpha (repr Hx * (X Hx)^-1))).
+move=> repsX g Gg.
+apply: (addrI (\sum_(Hx \in rcosets H G) fmalpha (repr Hx * (X Hx)^-1))).
 rewrite {1}(reindex_acts 'Rs _ Gg) ?actsRs_rcosets // -!big_split /=.
-apply: eq_bigr => Hx; case/rcosetsP=> x Gx ->{Hx}; rewrite !rcosetE -!rcosetM.
+apply: eq_bigr => _ /rcosetsP[x Gx ->]; rewrite !rcosetE -!rcosetM.
 case: repr_rcosetP => h1 Hh1; case: repr_rcosetP => h2 Hh2.
 have: H :* (x * g) \in rcosets H G by rewrite -rcosetE mem_imset ?groupM.
 have: H :* x \in rcosets H G by rewrite -rcosetE mem_imset.
-move/repsX; case/rcosetP=> h3 Hh3 ->; move/repsX; case/rcosetP=> h4 Hh4 ->.
+case/repsX/rcosetP=> h3 Hh3 -> /repsX/rcosetP[h4 Hh4 ->].
 rewrite -!(mulgA h1) -!(mulgA h2) -!(mulgA h3) !(mulKVg, invMg).
 by rewrite addrC -!zmodMgE -!morphM ?groupM ?groupV // -!mulgA !mulKg.
 Qed.
@@ -503,9 +487,9 @@ Let Gcycg : <[g]> \subset G. Proof. by rewrite cycle_subG. Qed.
 Let H_g_rcosets x := rcosets (H :* x) <[g]>.
 Let n_ x := #|H_g_rcosets x|.
 
-Lemma mulg_exp_card_rcosets : forall x, x * (g ^+ n_ x) \in H :* x.
+Lemma mulg_exp_card_rcosets x : x * (g ^+ n_ x) \in H :* x.
 Proof.
-move=> x; rewrite /n_ /H_g_rcosets -orbitRs -pcycle_actperm ?inE //.
+rewrite /n_ /H_g_rcosets -orbitRs -pcycle_actperm ?inE //.
 rewrite -{2}(iter_pcycle (actperm 'Rs g) (H :* x)) -permX -morphX ?inE //.
 by rewrite actpermE //= rcosetE -rcosetM rcoset_refl. 
 Qed.
@@ -519,17 +503,16 @@ CoInductive rcosets_pcycle_transversal_witness : Prop :=
 Lemma rcosets_pcycle_transversal_exists : rcosets_pcycle_transversal_witness.
 Proof.
 pose r1 x := repr (H_g_rcosets x); pose r2 x := repr (r1 x).
-have mem_r1: forall x, x \in G -> r1 x \in H_g_rcosets x.
-  by move=> x Gx; apply: (mem_repr (H :* x)); apply: orbit_refl.
-have id_r2: forall x, x \in G -> H_g_rcosets (r2 x) = H_g_rcosets x.
-  move=> x Gx; apply: orbit_transl; rewrite /r2.
+have mem_r1 x: x \in G -> r1 x \in H_g_rcosets x.
+  by move=> Gx; apply: (mem_repr (H :* x)); apply: orbit_refl.
+have id_r2 x: x \in G -> H_g_rcosets (r2 x) = H_g_rcosets x.
+  move=> Gx; apply: orbit_transl; rewrite /r2.
   case/rcosetsP: (mem_r1 x Gx) => gi Ggi ->.
   by rewrite -rcosetM rcoset_repr rcosetM -rcosetE mem_orbit. 
-exists (r2 @: G); split=> [w z||].
-- case/imsetP=> x Gx ->{w}; case/imsetP=> y Gy ->{z}.
-  by rewrite !id_r2 /r2 /r1 // => ->.
-- apply/subsetP=> u; case/imsetP=> x Gx ->{u}.
-  rewrite /r2; case/rcosetsP: (mem_r1 x Gx) => y; case/cycleP=> i ->{y} ->.
+exists (r2 @: G); split=> [_ _ /imsetP[x Gx ->] /imsetP[y Gy ->]||].
+- by rewrite !id_r2 /r2 /r1 // => ->.
+- apply/subsetP=> _ /imsetP[x Gx ->]; rewrite /r2.
+  case/rcosetsP: (mem_r1 x Gx) => _ /cycleP[i ->] ->.
   rewrite -rcosetM; apply: subsetP (mem_repr_rcoset H _).
   by rewrite mul_subG // sub1set groupM ?groupX.
 apply/subsetP=> x Gx; case/rcosetsP: (mem_r1 x Gx) => y gy def_r1x.
@@ -543,13 +526,14 @@ Hypothesis trX : rcosets_pcycle_transversal X.
 Lemma im_rcosets_pcycle_transversal :
   H_g_rcosets @: X = orbit 'Rs <[g]> @: rcosets H G.
 Proof.
-have [_ sXG sGHXg]:= trX.
+have [_ /subsetP sXG /subsetP sGHXg] := trX.
 apply/setP=> Hxg; apply/imsetP/imsetP=> [[x Xx ->{Hxg}]|[Hx]] /=.
-  by exists (H :* x); rewrite // -rcosetE mem_imset ?(subsetP sXG).
-case/rcosetsP=> hxgi; move/(subsetP sGHXg); case/mulsgP=> hx gi.
-case/mulsgP=> h x Hh Xx -> g_gi -> -> -> {hx hxgi Hxg Hx}; exists x => //.
-by apply: orbit_transl; rewrite !rcosetM rcoset_id // -rcosetE mem_orbit.
+  by exists (H :* x); rewrite // -rcosetE mem_imset ?sXG.
+case/rcosetsP=> _ /sGHXg/mulsgP[_ gi /mulsgP[h x Hh Xx ->] g_gi ->] -> ->.
+exists x => //; apply: orbit_transl.
+by rewrite !rcosetM rcoset_id // -rcosetE mem_orbit.
 Qed.
+
 Local Notation imHg_eq := im_rcosets_pcycle_transversal.
 
 Lemma sum_card_rcosets_pcycles : (\sum_(x \in X) n_ x)%N = #|G : H|.
@@ -563,26 +547,23 @@ Qed.
 Lemma transfer_pcycle_def :
   transfer g = \sum_(x \in X) fmalpha ((g ^+ n_ x) ^ x^-1).
 Proof.
-have [injHg sXG sGHXg] := trX.
+have [injHg sXG /subsetP sGHXg] := trX.
 pose repset := \bigcup_(x \in X) [set x * g ^+ (i : 'I__) | i <- 'I_(n_ x)].
 pose transX Hy := repr (Hy :&: repset).
 pose pcyc x := pcycle (actperm 'Rs g) (H :* x).
 pose traj x := traject (actperm 'Rs g) (H :* x) #|pcyc x|.
-have Hgr_eq : forall x, H_g_rcosets x = pcyc x.
-  by move=> x; rewrite /H_g_rcosets -orbitRs -pcycle_actperm ?inE.
-have pcyc_eq : forall x, pcyc x =i traj x by move=> x; apply: pcycle_traject.
-have uniq_traj : forall x, uniq (traj x)
-  by move=> x; apply: uniq_traject_pcycle.
-have n_eq: forall x, n_ x = #|pcyc x| by move=> x; rewrite /n_ Hgr_eq.
-have size_traj : forall x, size (traj x) = n_ x 
-  by move=> x; rewrite n_eq size_traject.
-have nth_traj : forall x j, 
-  j < n_ x -> nth (H :* x) (traj x) j = H :* (x * g ^+ j). 
-- move=> x j lt_j_x; rewrite nth_traject -?n_eq //.
+have Hgr_eq x: H_g_rcosets x = pcyc x.
+  by rewrite /H_g_rcosets -orbitRs -pcycle_actperm ?inE.
+have pcyc_eq x: pcyc x =i traj x by exact: pcycle_traject.
+have uniq_traj x: uniq (traj x) by apply: uniq_traject_pcycle.
+have n_eq x: n_ x = #|pcyc x| by rewrite /n_ Hgr_eq.
+have size_traj x: size (traj x) = n_ x by rewrite n_eq size_traject.
+have nth_traj x j: j < n_ x -> nth (H :* x) (traj x) j = H :* (x * g ^+ j). 
+  move=> lt_j_x; rewrite nth_traject -?n_eq //.
   by rewrite  -permX -morphX ?inE // actpermE //= rcosetE rcosetM.
-have transX_mem : forall y, y \in G -> transX (H :* y) \in H :* y :&: repset.
-  move=> y Gy; case/mulsgP: (subsetP sGHXg _ Gy)=> t g0.
-  case/mulsgP=> h x Hh Xx ->{t} cycGg0 ->; rewrite -mulgA rcosetM rcoset_id //.
+have transX_mem y: y \in G -> transX (H :* y) \in H :* y :&: repset.
+  case/sGHXg/mulsgP=> _ g0 /mulsgP[h x Hh Xx ->] cycGg0 ->{y}.
+  rewrite -mulgA rcosetM rcoset_id //.
   pose j := index (H :* (x * g0)) (traj x).
   have lt_j_x: j < n_ x.
     by rewrite -size_traj index_mem rcosetM -rcosetE -pcyc_eq -Hgr_eq mem_imset.
@@ -593,12 +574,12 @@ have transX_mem : forall y, y \in G -> transX (H :* y) \in H :* y :&: repset.
 have coset_transversal_transX : coset_transversal transX.
   move=> Hy HG_Hy /=; have [y Gy ->] := rcosetsP HG_Hy.
   exact: (subsetP (subsetIl _ _) _ (transX_mem _ _)).
-have transXE : forall x i, 
+have transXE x i : 
     x \in X -> i < n_ x -> transX (H :* x :* g ^+ i) = x * g ^+ i.
-- move=> x i Xx lt_i_x; rewrite -rcosetM.
+- move=> Xx lt_i_x; rewrite -rcosetM.
   have Gxgi : x * g ^+ i \in G by rewrite groupM ?(subsetP sXG x) // ?groupX. 
   case/setIP: (transX_mem _ Gxgi) => Hxgi_transX {Gxgi}.
-  case/bigcupP=> x' Xx'; case/imsetP=> j Ij transX_eq; rewrite transX_eq.
+  case/bigcupP=> x' Xx' /imsetP[j Ij transX_eq]; rewrite transX_eq.
   have xx' : x = x'.
     apply: injHg => //; apply: orbit_transl; apply/orbitP. 
     exists (g ^+ j * g ^- i) => /=.
@@ -613,10 +594,10 @@ have transXE : forall x i,
 rewrite (transfer_indep coset_transversal_transX Gg) /V.
 rewrite (partition_big_imset (orbit 'Rs <[g]>)) /=.
 rewrite -imHg_eq big_imset //=; apply eq_bigr=> x Xx.
-rewrite (eq_bigl (mem (H_g_rcosets x))) //=; last first.
-  move=> Hx; rewrite /H_g_rcosets orbit_eq_mem //=.
+rewrite (eq_bigl (mem (H_g_rcosets x))) //= => [|Hx]; last first.
+  rewrite /H_g_rcosets orbit_eq_mem //=.
   apply/andP/idP; [case=> // | split=> //].
-  apply: subsetP H0; apply/subsetP=> Hz; case/orbitP=> g0 cycgg0 <-.
+  apply: subsetP H0; apply/subsetP=> _ /orbitP[g0 cycgg0 <-].
   rewrite //= rcosetE -rcosetM -rcosetE mem_imset //.
   by rewrite groupM ?(subsetP sXG x) ?(subsetP Gcycg g0).
 rewrite Hgr_eq (eq_bigl _ _ (pcyc_eq x)) -big_uniq // /traj /n_ Hgr_eq /=.

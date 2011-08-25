@@ -24,6 +24,7 @@
     ("Hint View for" "hv" "Hint View for #" t "Hint\\s-+View\\s-+for")
     ("inside" "ins" nil f "inside")
     ("outside" "outs" nil f "outside")
+    ("Canonical " nil "Canonical  #." t "Canonical")
 )
    "Extended list of commands, includings ssr and user defined ones")
 
