@@ -58,6 +58,25 @@ End Exports.
 End Category.
 Export Category.Exports.
 
+Section TypeCat.
+
+Variable T : Type.
+Notation Tcomp := (@funcomp T T T tt).
+Notation Tid := (@id T).
+
+Lemma acomp: @associative (T -> T) (Tcomp).
+Proof. by []. Qed.
+
+Lemma lid_comp : left_id Tid Tcomp.
+Proof. by []. Qed.
+
+Lemma rid_comp : right_id Tid Tcomp.
+Proof. by []. Qed.
+
+Canonical Structure type_cat :=  CatType T (CatMixin acomp lid_comp rid_comp).
+
+End TypeCat.
+
 Definition composition (cT:catType) := Category.composition (Category.class cT).
 Definition identity (cT:catType) := Category.identity (Category.class cT).
 Definition ob (cT:catType) := Category.sort (cT).
@@ -104,8 +123,6 @@ Record mixin_of (oM : object_map cT dT) := Mixin {
 }.
 
 Notation class_of := mixin_of.
-
-(* The phantom forces the inference on source and target type*)
 
 Structure map (phcd: phant (cT -> dT)) := Pack {
   apply : cT -> dT;
@@ -156,11 +173,15 @@ Proof. by case=> F; case. Qed.
 Lemma fcomposition cT dT : forall (F:{functor cT -> dT}), func_comp (armap F).
 Proof. by case => F; case. Qed.
 
+(* Defining an alias to bypass the
+   head constant restriction on Structure projections. *)
+
+Definition idmap T := @id T.
 Section IdentityFunctor.
 
 Variable cT : catType.
 
-Definition idmap := @id cT.
+Notation idmap := (@idmap cT).
 
 Lemma id_covariance : @covariant_map _ cT (idmap) id.
 Proof. by []. Qed.
@@ -197,6 +218,15 @@ Canonical Structure comp_functor := Functor
   (Functor.Mixin comp_covariance comp_fidentity comp_fcomposition).
 
 End CompFunctor.
+
+Section TestFunctors.
+
+Check [catType of nat].
+Check (@idmap nat).
+(* And now the catType for nat is automatically inferred.*)
+Check [functor of (@idmap nat)].
+
+End TestFunctors.
 
 Module NatTrans.
 
@@ -322,7 +352,7 @@ End Exports.
 End Adjunction.
 Export Adjunction.Exports.
 
-Section Test.
+Section TestAdjunction.
 Variables (cT dT : catType).
 
 Variable x : {adjunction (cT -> dT)}.
@@ -348,4 +378,4 @@ Variable m': Adjunction.mixin_of G U.
 
 Check (Adjunction m).
 
-End Test.
+End TestAdjunction.
